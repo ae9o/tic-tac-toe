@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tic-tac-toe</string>
+    <string name="menu_clear_score_item">Clear score</string>
+    <string name="menu_settings_item">Settings</string>
+    <string name="menu_about_item">About</string>
+    <string name="menu_exit_item">Exit</string>
+    <string name="field_fragment_label">Tic-tac-toe</string>
+    <string name="field_restart_button">Restart</string>
+    <string name="field_draw_msg">DRAW</string>
+    <string name="field_x_score_text">%1$d</string>
+    <string name="field_o_score_text">%1$d</string>
+    <string name="settings_fragment_label">Settings</string>
+    <string name="settings_field_size_text">Game field size: %1$d</string>
+    <string name="settings_ai_enabled_switch">Enable AI</string>
+    <string name="settings_ai_starts_switch">AI takes the first move</string>
+    <string name="settings_swap_marks_switch">First player uses “O”</string>
+    <string name="settings_combo_hint_text">Hint: it is required to collect only 5 marks in a row for fields of size 6
+        or more.</string>
+    <string name="about_fragment_label">About</string>
+    <string name="about_about_text">This ultimate tic-tac-toe application was developed by Alexei Evdokimenko
+        (<a href="https://github.com/ae9o/tic-tac-toe">github.com/ae9o/tic-tac-toe</a>) as part of a test task and is
+        licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>. Feel free to
+        use it for any purpose.</string>
+</resources>

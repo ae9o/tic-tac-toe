@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="FieldCell">
+        <attr name="mark">
+            <enum name="empty" value="0" />
+            <enum name="x" value="1" />
+            <enum name="o" value="2" />
+        </attr>
+        <attr name="xForegroundColor" format="color" />
+        <attr name="oForegroundColor" format="color" />
+    </declare-styleable>
+</resources>

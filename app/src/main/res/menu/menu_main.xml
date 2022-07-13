@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="ae9o.tictactoe.gui.MainActivity">
+
+    <item android:title="@string/menu_clear_score_item" android:id="@+id/clear_score_item"/>
+    <item android:id="@+id/settings_item"
+          android:orderInCategory="100"
+          app:showAsAction="never" android:title="@string/menu_settings_item"/>
+
+    <item android:title="@string/menu_about_item"
+          android:orderInCategory="101"
+          android:id="@+id/about_item"/>
+
+    <item android:title="@string/menu_exit_item"
+          android:orderInCategory="102"
+          android:id="@+id/exit_item"/>
+</menu>
