@@ -16,6 +16,7 @@
 
 package ae9o.tictactoe.gui.utils;
 
+/** An auxiliary set of named constants for dealing with "magic numbers". */
 public final class Quantity {
     public static final float NONE = 0f;
     public static final float QUARTER = 0.25f;

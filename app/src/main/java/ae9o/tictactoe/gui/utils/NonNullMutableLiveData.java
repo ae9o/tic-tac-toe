@@ -21,7 +21,18 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.util.Objects;
 
+/**
+ * {@link MutableLiveData} which does not allow the value {@code null} to be stored. Attempting to set/post
+ * {@code null} will result in an NullPointerException being thrown.
+ *
+ * @param <T> the type of data hold by this instance.
+ */
 public class NonNullMutableLiveData<T> extends MutableLiveData<T> {
+    /**
+     * Creates a NonNullMutableLiveData initialized with the given {@code non-null} {@code value}.
+     *
+     * @param value initial non-null value.
+     */
     public NonNullMutableLiveData(@NonNull T value) {
         super(Objects.requireNonNull(value));
     }
