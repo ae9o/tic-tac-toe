@@ -16,8 +16,7 @@
 
 package ae9o.tictactoe.core;
 
-import androidx.annotation.Nullable;
-
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Random;
 
