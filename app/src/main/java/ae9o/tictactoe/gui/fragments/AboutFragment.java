@@ -26,9 +26,26 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+/**
+ * Simple Fragment with the description of this app.
+ */
 public class AboutFragment extends Fragment {
+    /** Binding with views from the Fragment's xml resource. */
     private FragmentAboutBinding binding;
 
+    /**
+     * Inflates the instance with views from the Fragment's xml resource.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate
+     * any views in the fragment,
+     * @param container If non-null, this is the parent view that the fragment's
+     * UI should be attached to. The fragment should not add the view itself,
+     * but this can be used to generate the LayoutParams of the view.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     * from a previous saved state as given here.
+     *
+     * @return the View for the fragment's UI.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
@@ -36,11 +53,23 @@ public class AboutFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * Initializes the instance once its view hierarchy has been completely created.
+     *
+     * @param view The View returned by {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     * from a previous saved state as given here.
+     */
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Activate hyperlinks in the description text.
         binding.aboutText.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
+    /**
+     * Disposes fragment's resources.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

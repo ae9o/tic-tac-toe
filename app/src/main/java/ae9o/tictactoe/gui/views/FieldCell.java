@@ -31,14 +31,24 @@ import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
 
+/**
+ * {@link View} which implements a field cell with the ability to display animated marks.
+ *
+ * <p>Works in tandem with the {@link FieldLayout}. But in case of emergency, it can be used standalone.
+ */
 public class FieldCell extends View {
+    /** The standard line width for marks inside a cell. */
     private static final int DEFAULT_STROKE_WIDTH = 20;
 
+    /** Parent layout. */
     private FieldLayout fieldLayout;
+    /** Current mark of the cell. */
     private Mark mark = Mark.EMPTY;
+    /** Cell's coordinates. */
     private int row;
     private int col;
 
+    /** Lots of stuff to draw animated marks. */
     private Paint backgroundPaint;
     private Paint foregroundPaint;
     private int activeBackgroundColor = Color.LTGRAY;
@@ -48,27 +58,86 @@ public class FieldCell extends View {
     private float animationProgress;
     private CellDrawable drawable = EMPTY_DRAWABLE;
 
+    /**
+     * Simple constructor to use when creating a view from code.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     */
     public FieldCell(Context context) {
-        super(context);
-        init(context, null, 0, 0);
+        this(context, null, 0, 0);
     }
 
+    /**
+     * Constructor that is called when inflating a view from XML. This is called
+     * when a view is being constructed from an XML file, supplying attributes
+     * that were specified in the XML file. This version uses a default style of
+     * 0, so the only attribute values applied are those in the Context's Theme
+     * and the given AttributeSet.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @param attrs The attributes of the XML tag that is inflating the view.
+     */
     public FieldCell(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        init(context,  attrs, 0, 0);
+        this(context,  attrs, 0, 0);
     }
 
+    /**
+     * Perform inflation from XML and apply a class-specific base style from a
+     * theme attribute. This constructor of View allows subclasses to use their
+     * own base style when they are inflating. For example, a Button class's
+     * constructor would call this version of the super class constructor and
+     * supply <code>R.attr.buttonStyle</code> for <var>defStyleAttr</var>; this
+     * allows the theme's button style to modify all of the base view attributes
+     * (in particular its background) as well as the Button class's attributes.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @param attrs The attributes of the XML tag that is inflating the view.
+     * @param defStyleAttr An attribute in the current theme that contains a
+     *        reference to a style resource that supplies default values for
+     *        the view. Can be 0 to not look for defaults.
+     */
     public FieldCell(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context, attrs, defStyleAttr, 0);
+        this(context, attrs, defStyleAttr, 0);
     }
 
+    /**
+     * Perform inflation from XML and apply a class-specific base style from a
+     * theme attribute or style resource. This constructor of View allows
+     * subclasses to use their own base style when they are inflating.
+     *
+     * <p>When determining the final value of a particular attribute, there are
+     * four inputs that come into play:
+     * <ol>
+     * <li>Any attribute values in the given AttributeSet.
+     * <li>The style resource specified in the AttributeSet (named "style").
+     * <li>The default style specified by <var>defStyleAttr</var>.
+     * <li>The default style specified by <var>defStyleRes</var>.
+     * <li>The base values in this theme.
+     * </ol>
+     *
+     * <p>Each of these inputs is considered in-order, with the first listed taking
+     * precedence over the following ones. In other words, if in the
+     * AttributeSet you have supplied <code>&lt;Button * textColor="#ff000000"&gt;</code>
+     * , then the button's text will <em>always</em> be black, regardless of
+     * what is specified in any of the styles.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @param attrs The attributes of the XML tag that is inflating the view.
+     * @param defStyleAttr An attribute in the current theme that contains a
+     *        reference to a style resource that supplies default values for
+     *        the view. Can be 0 to not look for defaults.
+     * @param defStyleRes A resource identifier of a style resource that
+     *        supplies default values for the view, used only if
+     *        defStyleAttr is 0 or can not be found in the theme. Can be 0
+     *        to not look for defaults.
+     */
     public FieldCell(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        init(context, attrs, defStyleAttr, defStyleRes);
-    }
 
-    private void init(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         backgroundPaint = new Paint();
         backgroundPaint.setStyle(Paint.Style.FILL);
         backgroundPaint.setColor(inactiveBackgroundColor);
@@ -81,6 +150,20 @@ public class FieldCell extends View {
         parseAttributes(context, attrs, defStyleAttr, defStyleRes);
     }
 
+    /**
+     * Initializes the view with parameters retrieved from the given XML attributes.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @param attrs The attributes of the XML tag that is inflating the view.
+     * @param defStyleAttr An attribute in the current theme that contains a
+     *        reference to a style resource that supplies default values for
+     *        the view. Can be 0 to not look for defaults.
+     * @param defStyleRes A resource identifier of a style resource that
+     *        supplies default values for the view, used only if
+     *        defStyleAttr is 0 or can not be found in the theme. Can be 0
+     *        to not look for defaults.
+     */
     private void parseAttributes(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         if (attrs == null) {
             return;
@@ -105,32 +188,60 @@ public class FieldCell extends View {
         }
     }
 
+    /**
+     * Returns this view's parent layout.
+     */
     @Nullable
     public FieldLayout getFieldLayout() {
         return fieldLayout;
     }
 
+    /**
+     * Sets this view's parent layout.
+     *
+     * @param fieldLayout The new parent layout.
+     */
     public void setFieldLayout(@Nullable FieldLayout fieldLayout) {
         this.fieldLayout = fieldLayout;
     }
 
+    /**
+     * Returns this view's row coordinate.
+     */
     public int getRow() {
         return row;
     }
 
+    /**
+     * Returns this view's col coordinate.
+     */
     public int getCol() {
         return col;
     }
 
+    /**
+     * Sets this view's location on the field.
+     *
+     * @param row The row coordinate.
+     * @param col The col coordinate.
+     */
     public void setLocation(int row, int col) {
         this.row = row;
         this.col = col;
     }
 
+    /**
+     * Returns this view's foreground color.
+     */
     public int getForegroundColor() {
         return foregroundPaint.getColor();
     }
 
+    /**
+     * Sets this view's foreground color.
+     *
+     * @param foregroundColor The new color.
+     */
     public void setForegroundColor(int foregroundColor) {
         if (foregroundColor == foregroundPaint.getColor()) {
             return;
@@ -140,42 +251,82 @@ public class FieldCell extends View {
         invalidate();
     }
 
+    /**
+     * Returns the background color of the cell when the player's finger is placed on it.
+     */
     public int getActiveBackgroundColor() {
         return activeBackgroundColor;
     }
 
+    /**
+     * Sets the background color of the cell when the player's finger is placed on it.
+     *
+     * @param activeBackgroundColor The new color.
+     */
     public void setActiveBackgroundColor(int activeBackgroundColor) {
         this.activeBackgroundColor = activeBackgroundColor;
     }
 
+    /**
+     * Returns the background color of the cell when it is not pushed.
+     */
     public int getInactiveBackgroundColor() {
         return inactiveBackgroundColor;
     }
 
+    /**
+     * Sets the background color of the cell when it is not pushed.
+     *
+     * @param inactiveBackgroundColor The new color.
+     */
     public void setInactiveBackgroundColor(int inactiveBackgroundColor) {
         this.inactiveBackgroundColor = inactiveBackgroundColor;
     }
 
+    /**
+     * Return the color to draw X mark.
+     */
     public int getXForegroundColor() {
         return xForegroundColor;
     }
 
+    /**
+     * Sets the color to draw X mark.
+     *
+     * @param xForegroundColor The new color.
+     */
     public void setXForegroundColor(int xForegroundColor) {
         this.xForegroundColor = xForegroundColor;
     }
 
+    /**
+     * Returns the color to draw O mark.
+     */
     public int getOForegroundColor() {
         return oForegroundColor;
     }
 
+    /**
+     * Sets the color to draw O mark.
+     *
+     * @param oForegroundColor The new color.
+     */
     public void setOForegroundColor(int oForegroundColor) {
         this.oForegroundColor = oForegroundColor;
     }
 
+    /**
+     * Returns the current mark of the cell.
+     */
     public Mark getMark() {
         return mark;
     }
 
+    /**
+     * Sets current mark of the cell.
+     *
+     * @param mark The new mark.
+     */
     public void setMark(Mark mark) {
         if (mark == null) {
             throw new IllegalArgumentException("Mark parameter cannot be null");
@@ -188,6 +339,9 @@ public class FieldCell extends View {
         onMarkChanged();
     }
 
+    /**
+     * Reconfigures drawable when the view's mark changes.
+     */
     protected void onMarkChanged() {
         switch (mark) {
             case X:
@@ -207,6 +361,9 @@ public class FieldCell extends View {
         }
     }
 
+    /**
+     * Animates the appearance of the mark.
+     */
     private final ValueAnimator.AnimatorUpdateListener animatorUpdateListener =
             new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -216,6 +373,9 @@ public class FieldCell extends View {
         }
     };
 
+    /**
+     * Starts a new mark appearance animation from the beginning.
+     */
     public void startAnimation() {
         animationProgress = Quantity.NONE;
 
@@ -224,6 +384,18 @@ public class FieldCell extends View {
         animator.start();
     }
 
+    /**
+     * Measures the dimensions of the cell when the parent layout changes.
+     *
+     * <p>The cell is formed square and depends on the width of the view.
+     *
+     * @param widthMeasureSpec horizontal space requirements as imposed by the parent.
+     *                         The requirements are encoded with
+     *                         {@link android.view.View.MeasureSpec}.
+     * @param heightMeasureSpec vertical space requirements as imposed by the parent.
+     *                         The requirements are encoded with
+     *                         {@link android.view.View.MeasureSpec}.
+     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int minWidth = getMinimumWidth();
@@ -244,6 +416,11 @@ public class FieldCell extends View {
         setMeasuredDimension(width, width);
     }
 
+    /**
+     * Draws a cell according to its mark.
+     *
+     * @param canvas the canvas on which the background will be drawn
+     */
     @Override
     protected void onDraw(Canvas canvas) {
         drawable.draw(this, canvas);
@@ -268,6 +445,12 @@ public class FieldCell extends View {
         return super.onTouchEvent(event);
     }
 
+    /**
+     * Notifies the parent layout when the cell is clicked.
+     *
+     * @return True there was an assigned OnClickListener that was called, false
+     *         otherwise is returned.
+     */
     @Override
     public boolean performClick() {
         notifyFieldLayoutCellClicked();
@@ -281,6 +464,9 @@ public class FieldCell extends View {
         }
     }
 
+    /**
+     * A base helper class to support the ability to draw various marks.
+     */
     protected static class CellDrawable {
         public boolean isAnimated() {
             return false;
@@ -291,8 +477,14 @@ public class FieldCell extends View {
         }
     }
 
+    /**
+     * Draws an empty cell.
+     */
     protected static final CellDrawable EMPTY_DRAWABLE = new CellDrawable();
 
+    /**
+     * Draws a cell marked X.
+     */
     protected static final CellDrawable X_DRAWABLE = new CellDrawable() {
         @Override
         public boolean isAnimated() {
@@ -331,6 +523,9 @@ public class FieldCell extends View {
         }
     };
 
+    /**
+     * Draws a cell marked O.
+     */
     protected static final CellDrawable O_DRAWABLE = new CellDrawable() {
         private static final float START_ANGLE = 270f;
         private static final float SWEEP_ANGLE = 360f;

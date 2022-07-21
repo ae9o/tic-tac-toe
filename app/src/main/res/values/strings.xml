@@ -18,7 +18,7 @@
     <string name="settings_combo_hint_text">Hint: it is required to collect only 5 marks in a row for fields of size 6
         or more.</string>
     <string name="about_fragment_label">About</string>
-    <string name="about_about_text">This ultimate tic-tac-toe application was developed by Alexei Evdokimenko
+    <string name="about_about_text">This improved tic-tac-toe application was developed by Alexei Evdokimenko
         (<a href="https://github.com/ae9o/tic-tac-toe">github.com/ae9o/tic-tac-toe</a>) as part of a test task and is
         licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>. Feel free to
         use it for any purpose.</string>

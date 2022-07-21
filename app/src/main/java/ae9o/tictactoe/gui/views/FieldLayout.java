@@ -31,12 +31,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * {@link TableLayout} which implements a field of {@link FieldCell} ordered in rows and columns.
+ *
+ * <p>Allows to subscribe to cell click events.
+ *
+ * <p>Supports animated display of game events (for example, the completion of a combo).
+ */
 public class FieldLayout extends TableLayout {
+    /** Default margin for cells. */
     private static final int DEFAULT_MARGIN = 10;
-    private static final int DEFAULT_STROKE_WIDTH = DEFAULT_MARGIN * 2;
+    /** Default stroke width for different animations. */
+    private static final int DEFAULT_STROKE_WIDTH = 20;
 
-    private static final Rect tmpRect = new Rect();
-
+    /** Lots of stuff to draw animations. */
     private Paint paint;
     private float backgroundAnimationProgress;
     private float comboAnimationProgress;
@@ -47,30 +55,49 @@ public class FieldLayout extends TableLayout {
     private int xForegroundColor = Color.BLACK;
     private int oForegroundColor = Color.BLACK;
 
+    /** Reusable building material for new fields. */
     private List<TableRow> rowPool;
     private List<FieldCell> cellPool;
 
+    /** The current state of the field. */
     private FieldCell[][] cells;
     private int size;
 
+    /** Coordinates of the combo. */
     private float startComboX;
     private float startComboY;
     private float comboDeltaX;
     private float comboDeltaY;
 
+    /** Cell click listener. */
     private OnCellClickListener onCellClickListener;
 
+    private static final Rect tmpRect = new Rect();
+
+    /**
+     * Simple constructor to use when creating a view from code.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     */
     public FieldLayout(Context context) {
-        super(context);
-        init(context, null);
+        this(context, null);
     }
 
+    /**
+     * Constructor that is called when inflating a view from XML. This is called
+     * when a view is being constructed from an XML file, supplying attributes
+     * that were specified in the XML file. This version uses a default style of
+     * 0, so the only attribute values applied are those in the Context's Theme
+     * and the given AttributeSet.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @param attrs The attributes of the XML tag that is inflating the view.
+     */
     public FieldLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context, attrs);
-    }
 
-    private void init(Context context, @Nullable AttributeSet attrs) {
         setStretchAllColumns(true);
         setWillNotDraw(false);
 
@@ -87,19 +114,37 @@ public class FieldLayout extends TableLayout {
         cellPool = new ArrayList<>();
     }
 
+    /**
+     * Returns the active cell click listener.
+     */
     @Nullable
     public OnCellClickListener getOnCellClickListener() {
         return onCellClickListener;
     }
 
+    /**
+     * Sets this view's new cell click listener.
+     *
+     * <p>This view supports only one active listener. The new listener replaces the old one.
+     *
+     * @param onCellClickListener The new listener.
+     */
     public void setOnCellClickListener(@Nullable OnCellClickListener onCellClickListener) {
         this.onCellClickListener = onCellClickListener;
     }
 
+    /**
+     * Returns this view's background color.
+     */
     public int getBackgroundColor() {
         return backgroundColor;
     }
 
+    /**
+     * Sets this view's new background color.
+     *
+     * @param backgroundColor The new color of the background.
+     */
     @Override
     public void setBackgroundColor(int backgroundColor) {
         if (backgroundColor == this.backgroundColor) {
@@ -110,10 +155,18 @@ public class FieldLayout extends TableLayout {
         invalidate();
     }
 
+    /**
+     * Returns this view's foreground color.
+     */
     public int getForegroundColor() {
         return foregroundColor;
     }
 
+    /**
+     * Sets this view's new foreground color.
+     *
+     * @param foregroundColor The new color of the foreground.
+     */
     public void setForegroundColor(int foregroundColor) {
         if (foregroundColor == this.foregroundColor) {
             return;
@@ -123,10 +176,23 @@ public class FieldLayout extends TableLayout {
         invalidate();
     }
 
+    /**
+     * Returns the actual size of the field.
+     */
     public int getSize() {
         return size;
     }
 
+    /**
+     * For internal use.
+     *
+     * <p>Prepares an array to hold a field of the given size.
+     *
+     * <p>If the capacity of the current array is not less than the required size, then it will be reused.
+     * If the current array has a smaller size, then a new one of the required size will be created.
+     *
+     * @param size The required size of the new field.
+     */
     private void setSize(int size) {
         if (size == this.size) {
             return;
@@ -142,6 +208,13 @@ public class FieldLayout extends TableLayout {
         }
     }
 
+    /**
+     * Returns the field cell with the given coordinates.
+     *
+     * @param row The row coordinate.
+     * @param col The col coordinate.
+     * @return Cell with given coordinates.
+     */
     public FieldCell getCell(int row, int col) {
         if (row < 0 || row >= size || col < 0 || col >= size) {
             throw new IllegalArgumentException("Cell location out of range");
@@ -149,6 +222,13 @@ public class FieldLayout extends TableLayout {
         return cells[row][col];
     }
 
+    /**
+     * Composes a new field of the specified size.
+     *
+     * <p>If a field has already been composed before, it will be disassembled into parts that will be reused.
+     *
+     * @param size The required size of the new field.
+     */
     public void compose(int size) {
         decompose();
 
@@ -175,28 +255,53 @@ public class FieldLayout extends TableLayout {
         startBackgroundAnimation();
     }
 
+    /**
+     * Disassembles current field into parts that will be reused later.
+     */
     public void decompose() {
         freeRowsAndCells();
         clearCells();
         clearCombo();
+        setSize(0);
     }
 
+    /**
+     * Returns this view's foreground color for X mark.
+     */
     public int getXForegroundColor() {
         return xForegroundColor;
     }
 
+    /**
+     * Sets this view's new foreground color for X mark.
+     *
+     * @param xForegroundColor The new color.
+     */
     public void setXForegroundColor(int xForegroundColor) {
         this.xForegroundColor = xForegroundColor;
     }
 
+    /**
+     * Returns this view's foreground color for O mark.
+     */
     public int getOForegroundColor() {
         return oForegroundColor;
     }
 
+    /**
+     * Sets this view's new foreground color for O mark.
+     *
+     * @param oForegroundColor The new color.
+     */
     public void setOForegroundColor(int oForegroundColor) {
         this.oForegroundColor = oForegroundColor;
     }
 
+    /**
+     * Sets coordinates of the new combo.
+     *
+     * @param combo The new combo.
+     */
     public void setCombo(TicTacToeGame.Combo combo) {
         final View start = cells[combo.getStartRow()][combo.getStartCol()];
         start.getDrawingRect(tmpRect);
@@ -214,6 +319,9 @@ public class FieldLayout extends TableLayout {
         startComboAnimation();
     }
 
+    /**
+     * Clears coordinates of the combo.
+     */
     public void clearCombo() {
         startComboX = 0;
         startComboY = 0;
@@ -221,16 +329,33 @@ public class FieldLayout extends TableLayout {
         comboDeltaY = 0;
     }
 
+    /**
+     * Returns true if combo is active.
+     */
     public boolean hasCombo() {
         return (comboDeltaX != 0) || (comboDeltaY != 0);
     }
 
+    /**
+     * For internal use.
+     *
+     * <p>Fills the field with nulls.
+     */
     private void clearCells() {
         for (int i = 0; i < size; ++i) {
             Arrays.fill(cells[i], null);
         }
     }
 
+    /**
+     * For internal use.
+     *
+     * <p>Attempts to retrieve a table row for reuse. If the pool runs out, creates a new one.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @return A new {@link TableRow}.
+     */
     private TableRow obtainTableRow(Context context) {
         if (rowPool.isEmpty()) {
             return new TableRow(context);
@@ -238,6 +363,15 @@ public class FieldLayout extends TableLayout {
         return rowPool.remove(rowPool.size() - 1);
     }
 
+    /**
+     * For internal use.
+     *
+     * <p>Attempts to retrieve a field cell for reuse. If the pool runs out, creates a new one.
+     *
+     * @param context The Context the view is running in, through which it can
+     *        access the current theme, resources, etc.
+     * @return A new {@link FieldCell}.
+     */
     private FieldCell obtainMarkView(Context context) {
         if (cellPool.isEmpty()) {
             return new FieldCell(context);
@@ -245,6 +379,11 @@ public class FieldLayout extends TableLayout {
         return cellPool.remove(cellPool.size() - 1);
     }
 
+    /**
+     * For internal use.
+     *
+     * <p>Returns all used rows and cell from the field to their pools for reuse.
+     */
     private void freeRowsAndCells() {
         for (int i = 0, n = getChildCount(); i < n; ++i) {
             final View group = getChildAt(i);
@@ -263,6 +402,9 @@ public class FieldLayout extends TableLayout {
         removeAllViews();
     }
 
+    /**
+     * Animates the background.
+     */
     private final ValueAnimator.AnimatorUpdateListener backgroundAnimationUpdateListener =
             new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -272,6 +414,9 @@ public class FieldLayout extends TableLayout {
         }
     };
 
+    /**
+     * Starts the background animation from the beginning.
+     */
     private void startBackgroundAnimation() {
         backgroundAnimationProgress = Quantity.NONE;
 
@@ -280,6 +425,9 @@ public class FieldLayout extends TableLayout {
         animator.start();
     }
 
+    /**
+     * Animates the appearance of the combo.
+     */
     private final ValueAnimator.AnimatorUpdateListener comboAnimationUpdateListener =
             new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -289,6 +437,9 @@ public class FieldLayout extends TableLayout {
         }
     };
 
+    /**
+     * Starts the combo animation from the beginning.
+     */
     private void startComboAnimation() {
         comboAnimationProgress = Quantity.NONE;
 
@@ -297,6 +448,11 @@ public class FieldLayout extends TableLayout {
         animator.start();
     }
 
+    /**
+     * Draws an animation of a grid growing from the center of the field.
+     *
+     * @param canvas The canvas on which the background will be drawn.
+     */
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -325,12 +481,22 @@ public class FieldLayout extends TableLayout {
         canvas.drawRect(0, 0, width, height + DEFAULT_MARGIN, paint);
     }
 
+    /**
+     * Draws a combo over the main content of the field.
+     *
+     * @param canvas The canvas on which to draw the view.
+     */
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
         drawCombo(canvas);
     }
 
+    /**
+     * Draws an animated line that gradually crosses out the combo.
+     *
+     * @param canvas The canvas on which to draw the view.
+     */
     private void drawCombo(Canvas canvas) {
         if (hasCombo()) {
             paint.setColor(Color.RED);
@@ -339,12 +505,22 @@ public class FieldLayout extends TableLayout {
         }
     }
 
+    /**
+     * Notifies the listener that a cell of the field has been clicked.
+     *
+     * <p>Intended to be called by field cells.
+     *
+     * @param cell The cell that was clicked.
+     */
     public void notifyCellClicked(FieldCell cell) {
         if (onCellClickListener != null) {
             onCellClickListener.onCellClick(cell, cell.getRow(), cell.getCol());
         }
     }
 
+    /**
+     * Cell click listener.
+     */
     public interface OnCellClickListener {
         void onCellClick(FieldCell cell, int row, int col);
     }
