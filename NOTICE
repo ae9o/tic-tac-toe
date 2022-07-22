@@ -1,4 +1,4 @@
-Ultimate tic-tac-toe
+Advanced tic-tac-toe
 Copyright (C) 2022 Alexei Evdokimenko <aevdokimenkosd@gmail.com>
 
 This product includes fastutil library developed by Sebastiano Vigna and 
@@ -21,3 +21,8 @@ This product includes Android Navigation UI library developed by Google
 
 This product includes Legacy Support V4 library developed by Google
 (https://maven.google.com).
+
+This product includes JSR-305 reference implementation
+distributed under the terms of the New BSD license (https://opensource.org/licenses/BSD-3-Clause).
+Copyright (c) 2007-2009, JSR305 expert group
+All rights reserved (http://code.google.com/p/jsr-305/).
