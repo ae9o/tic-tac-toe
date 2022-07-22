@@ -6,7 +6,6 @@
             <enum name="x" value="1" />
             <enum name="o" value="2" />
         </attr>
-        <attr name="xForegroundColor" format="color" />
-        <attr name="oForegroundColor" format="color" />
+        <attr name="foregroundColor" format="color" />
     </declare-styleable>
 </resources>

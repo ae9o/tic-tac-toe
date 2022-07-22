@@ -41,9 +41,9 @@ import java.util.Random;
  */
 public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStartListener,
         TicTacToeGame.OnGameFinishListener, TicTacToeGame.OnMarkSetListener, FieldLayout.OnCellClickListener {
-
-    /** Standard colors for drawing marks on the field. */
-    private static final int[] DEFAULT_MARK_COLORS = {Color.BLUE, Color.GRAY};
+    /** Default colors for players. */
+    private static final int DEFAULT_PLAYER_COLOR = Color.BLUE;
+    private static final int DEFAULT_AI_COLOR = Color.GRAY;
 
     /** Binding with views from the Fragment's xml resource. */
     private FragmentFieldBinding binding;
@@ -55,6 +55,8 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     private TicTacToeAi ai;
     /** Generator for random first move. */
     private Random random;
+    /** Colors for drawing marks on the field. */
+    private final int[] markColors = new int[Mark.values().length];
 
     /**
      * Inflates the instance with views from the Fragment's xml resource.
@@ -125,6 +127,7 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     @Override
     public void onGameStart(int size) {
         binding.fieldLayout.compose(size);
+        setupMarkColors();
 
         makeRandomFirstMove();
     }
@@ -154,7 +157,9 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
      */
     @Override
     public void onMarkSet(Mark mark, int row, int col) {
-        binding.fieldLayout.getCell(row, col).setMark(mark);
+        final FieldCell cell = binding.fieldLayout.getCell(row, col);
+        cell.setForegroundColor(getMarkColor(mark));
+        cell.setMark(mark);
     }
 
     /**
@@ -162,8 +167,8 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
      *
      * <p>Sends information to the core about the setting of the mark by the player.
      *
-     * <p>If AI is enabled in the settings, after setting the player's mark, it will automatically set the
-     * opponent's mark.
+     * <p>If AI is enabled in the settings, it will automatically set the opponent's mark
+     * after setting the player's mark
      *
      * @param cell The cell used to set the mark.
      * @param row The row coordinate.
@@ -174,6 +179,7 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
         if (!game.isActive()) {
             return;
         }
+
         if (!game.setMark(row, col)) {
             return;
         }
@@ -219,7 +225,6 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     public void startGame() {
         finishGame();
         clearPreviousGameResult();
-        setupMarkColors();
 
         //noinspection ConstantConditions
         game.start(viewModel.getFieldSize().getValue(), viewModel.getSwapMarks().getValue());
@@ -242,29 +247,35 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     }
 
     /**
-     * Adjusts the color of player marks depending on the selected game settings. The player's color should be bright
-     * and visible, and the AI's should not be flashy.
+     * Adjusts the color of marks depending on the selected game settings.
      */
     private void setupMarkColors() {
-        int startIndex = 0;
-        //noinspection ConstantConditions
-        if (viewModel.getAiStarts().getValue()) {
-            startIndex ^= 1;
+        final int first = game.getCurrentTurn().ordinal();
+        final int second = game.getNextTurn().ordinal();
+        if (viewModel.isAiStarts()) {
+            markColors[first] = DEFAULT_AI_COLOR;
+            markColors[second] = DEFAULT_PLAYER_COLOR;
+        } else {
+            markColors[first] = DEFAULT_PLAYER_COLOR;
+            markColors[second] = DEFAULT_AI_COLOR;
         }
-        //noinspection ConstantConditions
-        if (viewModel.getSwapMarks().getValue()) {
-            startIndex ^= 1;
-        }
-        binding.fieldLayout.setXForegroundColor(DEFAULT_MARK_COLORS[startIndex]);
-        binding.fieldLayout.setOForegroundColor(DEFAULT_MARK_COLORS[startIndex ^ 1]);
     }
 
     /**
-     * Places a mark in a random cell in an empty field.
+     * Returns the customized color for the given mark.
+     *
+     * @param mark The mark to be drawn.
+     * @return The color for the mark.
+     */
+    private int getMarkColor(Mark mark) {
+        return markColors[mark.ordinal()];
+    }
+
+    /**
+     * Places a mark in a random cell on an empty field.
      */
     private void makeRandomFirstMove() {
-        //noinspection ConstantConditions
-        if (!viewModel.getAiStarts().getValue()) {
+        if (!viewModel.isAiStarts()) {
             return;
         }
         if (random == null) {
@@ -280,7 +291,7 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     private void makeAiMove() {
         //noinspection ConstantConditions
         if (game.isActive() && viewModel.getAiEnabled().getValue()) {
-            TicTacToeAi.Cell guess = ai.guessNextMove();
+            final TicTacToeAi.Cell guess = ai.guessNextMove();
             game.setMark(guess.getRow(), guess.getCol());
         }
     }

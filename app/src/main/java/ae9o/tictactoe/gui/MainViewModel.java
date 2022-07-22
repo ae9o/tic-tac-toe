@@ -99,6 +99,10 @@ public class MainViewModel extends ViewModel {
         this.oScore.setValue(oScore);
     }
 
+    public boolean isAiStarts() {
+        return aiEnabled.getValue() && aiStarts.getValue();
+    }
+
     public void clearScore() {
         xScore.setValue(0);
         oScore.setValue(0);

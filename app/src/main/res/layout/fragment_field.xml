@@ -46,8 +46,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:xForegroundColor="@color/light_gray"
-                app:oForegroundColor="@color/light_gray"
+                app:foregroundColor="@color/light_gray"
                 android:layout_marginStart="24dp"/>
 
         <TextView
@@ -92,8 +91,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:xForegroundColor="@color/light_gray"
-                app:oForegroundColor="@color/light_gray"
+                app:foregroundColor="@color/light_gray"
                 android:layout_marginEnd="24dp"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

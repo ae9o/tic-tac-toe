@@ -53,8 +53,6 @@ public class FieldCell extends View {
     private Paint foregroundPaint;
     private int activeBackgroundColor = Color.LTGRAY;
     private int inactiveBackgroundColor = Color.WHITE;
-    private int xForegroundColor = Color.BLACK;
-    private int oForegroundColor = Color.BLACK;
     private float animationProgress;
     private CellDrawable drawable = EMPTY_DRAWABLE;
 
@@ -171,18 +169,8 @@ public class FieldCell extends View {
 
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.FieldCell, defStyleAttr, defStyleRes);
         try {
-            xForegroundColor = a.getColor(R.styleable.FieldCell_xForegroundColor, 0);
-            oForegroundColor = a.getColor(R.styleable.FieldCell_oForegroundColor, 0);
-
-            switch (a.getInteger(R.styleable.FieldCell_mark, 0)) {
-                case Mark.X_ORDINAL:
-                    setMark(Mark.X);
-                    break;
-
-                case Mark.O_ORDINAL:
-                    setMark(Mark.O);
-                    break;
-            }
+            setForegroundColor(a.getColor(R.styleable.FieldCell_foregroundColor, 0));
+            setMark(Mark.valueOf(a.getInt(R.styleable.FieldCell_mark, 0)));
         } finally {
             a.recycle();
         }
@@ -281,38 +269,6 @@ public class FieldCell extends View {
      */
     public void setInactiveBackgroundColor(int inactiveBackgroundColor) {
         this.inactiveBackgroundColor = inactiveBackgroundColor;
-    }
-
-    /**
-     * Return the color to draw X mark.
-     */
-    public int getXForegroundColor() {
-        return xForegroundColor;
-    }
-
-    /**
-     * Sets the color to draw X mark.
-     *
-     * @param xForegroundColor The new color.
-     */
-    public void setXForegroundColor(int xForegroundColor) {
-        this.xForegroundColor = xForegroundColor;
-    }
-
-    /**
-     * Returns the color to draw O mark.
-     */
-    public int getOForegroundColor() {
-        return oForegroundColor;
-    }
-
-    /**
-     * Sets the color to draw O mark.
-     *
-     * @param oForegroundColor The new color.
-     */
-    public void setOForegroundColor(int oForegroundColor) {
-        this.oForegroundColor = oForegroundColor;
     }
 
     /**
@@ -496,7 +452,6 @@ public class FieldCell extends View {
             super.draw(cell, canvas);
 
             final Paint paint = cell.foregroundPaint;
-            paint.setColor(cell.xForegroundColor);
 
             final float width = cell.getWidth();
             final float height = cell.getHeight();
@@ -540,7 +495,6 @@ public class FieldCell extends View {
             super.draw(cell, canvas);
 
             final Paint paint = cell.foregroundPaint;
-            paint.setColor(cell.oForegroundColor);
 
             final float width = cell.getWidth();
             final float height = cell.getHeight();

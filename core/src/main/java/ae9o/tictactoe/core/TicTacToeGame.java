@@ -579,6 +579,13 @@ public class TicTacToeGame {
     }
 
     /**
+     * Returns the mark of the next player.
+     */
+    public Mark getNextTurn() {
+        return TURN_ORDER[currentTurnIndex ^ 1];
+    }
+
+    /**
      * Activates next player.
      *
      * <p>This method is required for AI to work.
@@ -629,9 +636,13 @@ public class TicTacToeGame {
         X,
         O;
 
-        public static final int EMPTY_ORDINAL = 0;
-        public static final int X_ORDINAL = 1;
-        public static final int O_ORDINAL = 2;
+        public static Mark valueOf(int ordinal) {
+            final Mark[] values = values();
+            if ((ordinal < 0) || (ordinal >= values.length)) {
+                throw new IllegalArgumentException("There is no mark with such ordinal: " + ordinal);
+            }
+            return values[ordinal];
+        }
     }
 
     /** Possible outcomes at the end of the game. */

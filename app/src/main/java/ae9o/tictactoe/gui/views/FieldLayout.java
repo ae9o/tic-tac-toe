@@ -52,8 +52,6 @@ public class FieldLayout extends TableLayout {
     private int foregroundColor = Color.LTGRAY;
     private TableLayout.LayoutParams rowLayoutParams;
     private TableRow.LayoutParams cellLayoutParams;
-    private int xForegroundColor = Color.BLACK;
-    private int oForegroundColor = Color.BLACK;
 
     /** Reusable building material for new fields. */
     private List<TableRow> rowPool;
@@ -244,8 +242,6 @@ public class FieldLayout extends TableLayout {
                 cell.setLocation(i, j);
                 cell.setMark(TicTacToeGame.Mark.EMPTY);
                 cell.setClickable(true);
-                cell.setXForegroundColor(xForegroundColor);
-                cell.setOForegroundColor(oForegroundColor);
                 row.addView(cell);
                 cells[i][j] = cell;
             }
@@ -263,38 +259,6 @@ public class FieldLayout extends TableLayout {
         clearCells();
         clearCombo();
         setSize(0);
-    }
-
-    /**
-     * Returns this view's foreground color for X mark.
-     */
-    public int getXForegroundColor() {
-        return xForegroundColor;
-    }
-
-    /**
-     * Sets this view's new foreground color for X mark.
-     *
-     * @param xForegroundColor The new color.
-     */
-    public void setXForegroundColor(int xForegroundColor) {
-        this.xForegroundColor = xForegroundColor;
-    }
-
-    /**
-     * Returns this view's foreground color for O mark.
-     */
-    public int getOForegroundColor() {
-        return oForegroundColor;
-    }
-
-    /**
-     * Sets this view's new foreground color for O mark.
-     *
-     * @param oForegroundColor The new color.
-     */
-    public void setOForegroundColor(int oForegroundColor) {
-        this.oForegroundColor = oForegroundColor;
     }
 
     /**
