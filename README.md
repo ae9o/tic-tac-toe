@@ -1,14 +1,17 @@
-# Ultimate tic-tac-toe
-
 ![logo](logo.gif)
 
-This implementation of tic-tac-toe allows you to play against advanced AI on a field of any size. The app was created as
-part of a test task at one of the competitions and is distributed under the Apache License 2.0. Feel free to use it for
-any purpose.
+[![Latest release](https://img.shields.io/github/v/release/ae9o/tic-tac-toe?display_name=tag)](https://github.com/ae9o/tic-tac-toe/releases)
 
-An important fact about the gameplay. You can play on a field of any size, but you need to collect a combination of only
-5 marks in a row for fields of size 6 or more. It seems to me that this is the only version of the game that is playable
-and exciting.
+# Advanced tic-tac-toe for custom fields
+
+This implementation of tic-tac-toe allows to play against advanced AI on a field of custom size. The development of this
+app was started as part of a test task. I continue to develop it and its code is distributed under the Apache License
+2.0. Feel free to use it for any purpose.
+
+In order to maintain playability on very large fields, a small change in gameplay was required. A player must collect
+a combo of only 5 marks in a row on a field of size 6 or more (see the gif above for an example). It seems to me that
+this is the only version of the game that is exciting. The limited size of the combo on a large field creates a wide
+scope of possible strategies and makes the game tense. Awesome!
 
 ## Implementation details
 
@@ -34,8 +37,8 @@ collector can go on vacation.
 
 ## Future modifications
 
-The current version is single-threaded. This fact becomes noticeable when playing on large fields. It is planned to move
-AI to a separate thread and parallelize its calculations.
+The current version is single-threaded. This fact becomes noticeable when playing on very large fields. It is planned to
+move AI to a separate thread and parallelize its calculations.
 
 ## References
 
