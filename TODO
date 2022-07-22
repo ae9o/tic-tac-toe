@@ -1,3 +1,3 @@
-- Comment all code in detail
 - Move AI to a separate thread and parallelize its calculations
-- Add win and draw animations 
+- Add win and draw animations
+- Add an indication for the active player
