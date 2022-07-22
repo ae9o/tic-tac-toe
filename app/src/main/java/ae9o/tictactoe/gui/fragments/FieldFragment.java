@@ -19,6 +19,8 @@ package ae9o.tictactoe.gui.fragments;
 import ae9o.tictactoe.R;
 import ae9o.tictactoe.core.TicTacToeAi;
 import ae9o.tictactoe.core.TicTacToeGame;
+import ae9o.tictactoe.core.TicTacToeGame.Combo;
+import ae9o.tictactoe.core.TicTacToeGame.GameResult;
 import ae9o.tictactoe.core.TicTacToeGame.Mark;
 import ae9o.tictactoe.databinding.FragmentFieldBinding;
 import ae9o.tictactoe.gui.MainViewModel;
@@ -39,8 +41,7 @@ import java.util.Random;
 /**
  * Fragment with the game field UI. Passes user input to the game core. Listens to events in the core and renders them.
  */
-public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStartListener,
-        TicTacToeGame.OnGameFinishListener, TicTacToeGame.OnMarkSetListener, FieldLayout.OnCellClickListener {
+public class FieldFragment extends Fragment {
     /** Default colors for players. */
     private static final int DEFAULT_PLAYER_COLOR = Color.BLUE;
     private static final int DEFAULT_AI_COLOR = Color.GRAY;
@@ -93,13 +94,13 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
         viewModel.getXScore().observe(lifecycleOwner, this::onXScoreChanged);
         viewModel.getOScore().observe(lifecycleOwner, this::onOScoreChanged);
 
-        binding.fieldLayout.setOnCellClickListener(this);
+        binding.fieldLayout.setOnCellClickListener(this::onCellClick);
         binding.restartButton.setOnClickListener(this::onRestartButtonClick);
 
         game = new TicTacToeGame();
-        game.setOnGameStartListener(this);
-        game.setOnMarkSetListener(this);
-        game.setOnGameFinishListener(this);
+        game.setOnGameStartListener(this::onGameStart);
+        game.setOnMarkSetListener(this::onMarkSet);
+        game.setOnGameFinishListener(this::onGameFinish);
 
         ai = new TicTacToeAi(game);
 
@@ -118,45 +119,44 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     /**
      * Listens to the {@link TicTacToeGame#setOnGameStartListener(TicTacToeGame.OnGameStartListener)} event.
      *
-     * <p>Prepares a field of the appropriate size in the UI.
+     * <p>Prepares the UI of a field of the appropriate size.
      *
      * <p>Makes a random move if the AI is chosen as the first player.
      *
-     * @param size The size of the field of the started game.
+     * @param size The size of the field in the started game.
      */
-    @Override
-    public void onGameStart(int size) {
+    private void onGameStart(int size) {
         binding.fieldLayout.compose(size);
         setupMarkColors();
-
         makeRandomFirstMove();
     }
 
     /**
      * Listens to the {@link TicTacToeGame#setOnGameFinishListener(TicTacToeGame.OnGameFinishListener)} event.
      *
-     * <p>Renders the result of the game in the UI.
+     * <p>Updates the score.
+     *
+     * <p>Renders the result of the game.
      *
      * @param result The result of the game.
      * @param combo The coordinates of the combo collected by the player.
      *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
      */
-    @Override
-    public void onGameFinish(TicTacToeGame.GameResult result, TicTacToeGame.Combo combo) {
+    private void onGameFinish(GameResult result, Combo combo) {
+        updateScore(result, combo);
         showGameResult(result, combo);
     }
 
     /**
      * Listens to the {@link TicTacToeGame#setOnMarkSetListener(TicTacToeGame.OnMarkSetListener)} event.
      *
-     * <p>Renders the set mark in the UI.
+     * <p>Renders the set mark.
      *
      * @param mark The mark set.
      * @param row The row coordinate.
      * @param col The col coordinate.
      */
-    @Override
-    public void onMarkSet(Mark mark, int row, int col) {
+    private void onMarkSet(Mark mark, int row, int col) {
         final FieldCell cell = binding.fieldLayout.getCell(row, col);
         cell.setForegroundColor(getMarkColor(mark));
         cell.setMark(mark);
@@ -165,21 +165,19 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     /**
      * Listens to the {@link FieldLayout#setOnCellClickListener(FieldLayout.OnCellClickListener)} event.
      *
-     * <p>Sends information to the core about the setting of the mark by the player.
+     * <p>Sends information to the core about the mark to set.
      *
-     * <p>If AI is enabled in the settings, it will automatically set the opponent's mark
+     * <p>If AI is enabled in the settings, it will automatically set an opponent's mark
      * after setting the player's mark
      *
-     * @param cell The cell used to set the mark.
+     * @param cell The clicked cell.
      * @param row The row coordinate.
      * @param col The col coordinate.
      */
-    @Override
-    public void onCellClick(FieldCell cell, int row, int col) {
+    private void onCellClick(FieldCell cell, int row, int col) {
         if (!game.isActive()) {
             return;
         }
-
         if (!game.setMark(row, col)) {
             return;
         }
@@ -189,7 +187,7 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     /**
      * Listens to the {@link View#setOnClickListener(View.OnClickListener)} event of the restart button.
      *
-     * <p>Restarts the game when requested by the user.
+     * <p>Restarts the game when requested by a user.
      *
      * @param button The button clicked.
      */
@@ -224,7 +222,7 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
      */
     public void startGame() {
         finishGame();
-        clearPreviousGameResult();
+        clearGameResult();
 
         //noinspection ConstantConditions
         game.start(viewModel.getFieldSize().getValue(), viewModel.getSwapMarks().getValue());
@@ -237,13 +235,6 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
         if (game.isActive()) {
             game.finish();
         }
-    }
-
-    /**
-     * Clears previous game results.
-     */
-    private void clearPreviousGameResult() {
-        binding.gameResultText.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -297,34 +288,53 @@ public class FieldFragment extends Fragment implements TicTacToeGame.OnGameStart
     }
 
     /**
-     * Renders the game result in the UI.
+     * Renders the game result.
      *
      * @param result The result of the game.
      * @param combo The coordinates of the combo collected by the player.
      *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
      */
-    private void showGameResult(TicTacToeGame.GameResult result, TicTacToeGame.Combo combo) {
+    private void showGameResult(GameResult result, Combo combo) {
         switch (result) {
             case COMBO:
                 binding.fieldLayout.setCombo(combo);
-
-                switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
-                    case X:
-                        //noinspection ConstantConditions
-                        viewModel.setXScore(viewModel.getXScore().getValue() + 1);
-                        break;
-
-                    case O:
-                        //noinspection ConstantConditions
-                        viewModel.setOScore(viewModel.getOScore().getValue() + 1);
-                        break;
-                }
                 break;
 
             case DRAW:
                 binding.gameResultText.setVisibility(View.VISIBLE);
                 binding.xMark.startAnimation();
                 binding.oMark.startAnimation();
+                break;
+        }
+    }
+
+    /**
+     * Clears previous game results.
+     */
+    private void clearGameResult() {
+        binding.gameResultText.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * Adds points to the winner.
+     *
+     * @param result The result of the game.
+     * @param combo The coordinates of the combo collected by the player.
+     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
+     */
+    private void updateScore(GameResult result, Combo combo) {
+        if (result != GameResult.COMBO) {
+            return;
+        }
+        switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
+            case X:
+                //noinspection ConstantConditions
+                viewModel.setXScore(viewModel.getXScore().getValue() + 1);
+                break;
+
+            case O:
+                //noinspection ConstantConditions
+                viewModel.setOScore(viewModel.getOScore().getValue() + 1);
                 break;
         }
     }
