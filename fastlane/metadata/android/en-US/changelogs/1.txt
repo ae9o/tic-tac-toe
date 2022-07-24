@@ -1,0 +1,4 @@
+- Customizable game field size
+- Smart AI opponent
+- Customizable turn order
+- Customizable mark selection

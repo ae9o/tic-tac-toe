@@ -1,0 +1,5 @@
+This implementation of tic-tac-toe allows to play against advanced AI on a field of custom size. In order to maintain
+playability on very large fields, a small change in gameplay was required. A player must collect a combo of only 5 marks
+in a row on a field of size 6 or more (see screenshots for an example). It seems to me that this is the only version of
+the game that is exciting. The limited size of the combo on a large field creates a wide scope of possible strategies
+and makes the game tense. Awesome!
