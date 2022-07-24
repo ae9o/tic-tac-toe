@@ -36,7 +36,7 @@ public class MainViewModel extends ViewModel {
     /** The maximum allowed size of the game field. */
     public static final int MAX_GAME_FIELD_SIZE = 15;
     /** The size of the field at app startup. */
-    public static final int DEFAULT_GAME_FIELD_SIZE = 3;
+    public static final int DEFAULT_GAME_FIELD_SIZE = 10;
 
     /** The actual size of the game field chosen. */
     private final NonNullMutableLiveData<Integer> fieldSize = new NonNullMutableLiveData<>(DEFAULT_GAME_FIELD_SIZE);
