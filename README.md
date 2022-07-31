@@ -1,6 +1,10 @@
 ![logo](logo.gif)
 
 [![Latest release](https://img.shields.io/github/v/release/ae9o/tic-tac-toe?display_name=tag)](https://github.com/ae9o/tic-tac-toe/releases)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=ae9o_tic-tac-toe&metric=alert_status)](https://sonarcloud.io/dashboard?id=ae9o_tic-tac-toe)
+[![Technical debt](https://sonarcloud.io/api/project_badges/measure?project=ae9o_tic-tac-toe&metric=sqale_index)](https://sonarcloud.io/dashboard?id=ae9o_tic-tac-toe)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=ae9o_tic-tac-toe&metric=bugs)](https://sonarcloud.io/dashboard?id=ae9o_tic-tac-toe)
+[![Code smells](https://sonarcloud.io/api/project_badges/measure?project=ae9o_tic-tac-toe&metric=code_smells)](https://sonarcloud.io/dashboard?id=ae9o_tic-tac-toe)
 
 # Advanced tic-tac-toe for custom fields
 
