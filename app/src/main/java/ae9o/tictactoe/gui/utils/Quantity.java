@@ -18,6 +18,10 @@ package ae9o.tictactoe.gui.utils;
 
 /** An auxiliary set of named constants for dealing with "magic numbers". */
 public final class Quantity {
+    private Quantity() {
+        throw new IllegalStateException("Utility class");
+    }
+
     public static final float NONE = 0f;
     public static final float QUARTER = 0.25f;
     public static final float HALF = 0.5f;

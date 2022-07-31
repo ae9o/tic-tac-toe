@@ -83,8 +83,12 @@ public class SettingsFragment extends Fragment {
         binding.fieldSizeBar.setMax(MainViewModel.MAX_GAME_FIELD_SIZE - MainViewModel.MIN_GAME_FIELD_SIZE);
         binding.fieldSizeBar.setOnSeekBarChangeListener(
                 new SeekBar.OnSeekBarChangeListener() {
-                    public void onStartTrackingTouch(SeekBar seekBar) {}
-                    public void onStopTrackingTouch(SeekBar seekBar) {}
+                    public void onStartTrackingTouch(SeekBar seekBar) {
+                        // Do nothing.
+                    }
+                    public void onStopTrackingTouch(SeekBar seekBar) {
+                        // Do nothing.
+                    }
 
                     @Override
                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

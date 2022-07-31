@@ -305,6 +305,10 @@ public class FieldFragment extends Fragment {
                 binding.xMark.startAnimation();
                 binding.oMark.startAnimation();
                 break;
+
+            default:
+                // Do nothing.
+                break;
         }
     }
 
@@ -335,6 +339,10 @@ public class FieldFragment extends Fragment {
             case O:
                 //noinspection ConstantConditions
                 viewModel.setOScore(viewModel.getOScore().getValue() + 1);
+                break;
+
+            default:
+                // Do nothing.
                 break;
         }
     }

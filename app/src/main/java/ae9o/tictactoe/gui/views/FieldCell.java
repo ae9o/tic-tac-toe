@@ -396,6 +396,10 @@ public class FieldCell extends View {
                     backgroundPaint.setColor(inactiveBackgroundColor);
                     invalidate();
                     break;
+
+                default:
+                    // Do nothing.
+                    break;
             }
         }
         return super.onTouchEvent(event);
