@@ -151,6 +151,11 @@ public class TicTacToeGame {
         notifyGameStarted();
     }
 
+    public TicTacToeGame getSnapshot() {
+        // TODO
+        return null;
+    }
+
     /**
      * Sets up an empty game field of the given size.
      *

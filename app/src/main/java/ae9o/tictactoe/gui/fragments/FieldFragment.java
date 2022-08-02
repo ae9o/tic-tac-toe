@@ -17,7 +17,6 @@
 package ae9o.tictactoe.gui.fragments;
 
 import ae9o.tictactoe.R;
-import ae9o.tictactoe.core.TicTacToeAi;
 import ae9o.tictactoe.core.TicTacToeGame;
 import ae9o.tictactoe.core.TicTacToeGame.Combo;
 import ae9o.tictactoe.core.TicTacToeGame.GameResult;
@@ -32,14 +31,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
-import java.util.Random;
-
 /**
- * Fragment with the game field UI. Passes user input to the game core. Listens to events in the core and renders them.
+ * Fragment with the game field UI. Passes user input to the ViewModel. Listens to events in the ViewModel and renders
+ * them.
  */
 public class FieldFragment extends Fragment {
     /** Default colors for players. */
@@ -50,12 +49,6 @@ public class FieldFragment extends Fragment {
     private FragmentFieldBinding binding;
     /** Model with current game settings. */
     private MainViewModel viewModel;
-    /** The core of the game with the main logic. */
-    private TicTacToeGame game;
-    /** AI of the opponent. */
-    private TicTacToeAi ai;
-    /** Generator for random first move. */
-    private Random random;
     /** Colors for drawing marks on the field. */
     private final int[] markColors = new int[Mark.values().length];
 
@@ -94,17 +87,18 @@ public class FieldFragment extends Fragment {
         viewModel.getXScore().observe(lifecycleOwner, this::onXScoreChanged);
         viewModel.getOScore().observe(lifecycleOwner, this::onOScoreChanged);
 
+        viewModel.setOnGameStartListener(this::onGameStart);
+        viewModel.setOnMarkSetListener(this::onMarkSet);
+        viewModel.setOnGameFinishListener(this::onGameFinish);
+
         binding.fieldLayout.setOnCellClickListener(this::onCellClick);
         binding.restartButton.setOnClickListener(this::onRestartButtonClick);
+    }
 
-        game = new TicTacToeGame();
-        game.setOnGameStartListener(this::onGameStart);
-        game.setOnMarkSetListener(this::onMarkSet);
-        game.setOnGameFinishListener(this::onGameFinish);
-
-        ai = new TicTacToeAi(game);
-
-        startGame();
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        viewModel.replay();
     }
 
     /**
@@ -113,6 +107,11 @@ public class FieldFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        viewModel.setOnGameStartListener(null);
+        viewModel.setOnMarkSetListener(null);
+        viewModel.setOnGameFinishListener(null);
+
         binding = null;
     }
 
@@ -121,20 +120,16 @@ public class FieldFragment extends Fragment {
      *
      * <p>Prepares the UI of a field of the appropriate size.
      *
-     * <p>Makes a random move if the AI is chosen as the first player.
-     *
      * @param size The size of the field in the started game.
      */
     private void onGameStart(int size) {
-        binding.fieldLayout.compose(size);
+        clearGameResult();
         setupMarkColors();
-        makeRandomFirstMove();
+        binding.fieldLayout.compose(size);
     }
 
     /**
      * Listens to the {@link TicTacToeGame#setOnGameFinishListener(TicTacToeGame.OnGameFinishListener)} event.
-     *
-     * <p>Updates the score.
      *
      * <p>Renders the result of the game.
      *
@@ -143,7 +138,6 @@ public class FieldFragment extends Fragment {
      *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
      */
     private void onGameFinish(GameResult result, Combo combo) {
-        updateScore(result, combo);
         showGameResult(result, combo);
     }
 
@@ -167,21 +161,12 @@ public class FieldFragment extends Fragment {
      *
      * <p>Sends information to the core about the mark to set.
      *
-     * <p>If AI is enabled in the settings, it will automatically set an opponent's mark
-     * after setting the player's mark
-     *
      * @param cell The clicked cell.
      * @param row The row coordinate.
      * @param col The col coordinate.
      */
     private void onCellClick(FieldCell cell, int row, int col) {
-        if (!game.isActive()) {
-            return;
-        }
-        if (!game.setMark(row, col)) {
-            return;
-        }
-        makeAiMove();
+        viewModel.setMark(row, col);
     }
 
     /**
@@ -192,7 +177,7 @@ public class FieldFragment extends Fragment {
      * @param button The button clicked.
      */
     private void onRestartButtonClick(View button) {
-        startGame();
+        viewModel.startGame();
     }
 
     /**
@@ -216,33 +201,11 @@ public class FieldFragment extends Fragment {
     }
 
     /**
-     * Starts a new game.
-     *
-     * <p>If the previous game is still active, it will automatically finish.
-     */
-    public void startGame() {
-        finishGame();
-        clearGameResult();
-
-        //noinspection ConstantConditions
-        game.start(viewModel.getFieldSize().getValue(), viewModel.getSwapMarks().getValue());
-    }
-
-    /**
-     * Finishes an active game, if any.
-     */
-    public void finishGame() {
-        if (game.isActive()) {
-            game.finish();
-        }
-    }
-
-    /**
      * Adjusts the color of marks depending on the selected game settings.
      */
     private void setupMarkColors() {
-        final int first = game.getCurrentTurn().ordinal();
-        final int second = game.getNextTurn().ordinal();
+        final int first = viewModel.getCurrentTurn().ordinal();
+        final int second = viewModel.getNextTurn().ordinal();
         if (viewModel.isAiStarts()) {
             markColors[first] = DEFAULT_AI_COLOR;
             markColors[second] = DEFAULT_PLAYER_COLOR;
@@ -260,31 +223,6 @@ public class FieldFragment extends Fragment {
      */
     private int getMarkColor(Mark mark) {
         return markColors[mark.ordinal()];
-    }
-
-    /**
-     * Places a mark in a random cell on an empty field.
-     */
-    private void makeRandomFirstMove() {
-        if (!viewModel.isAiStarts()) {
-            return;
-        }
-        if (random == null) {
-            random = new Random();
-        }
-        final int size = game.getFieldSize();
-        game.setMark(random.nextInt(size), random.nextInt(size));
-    }
-
-    /**
-     * Sets a mark in the cell suggested by the AI.
-     */
-    private void makeAiMove() {
-        //noinspection ConstantConditions
-        if (game.isActive() && viewModel.getAiEnabled().getValue()) {
-            final TicTacToeAi.Cell guess = ai.guessNextMove();
-            game.setMark(guess.getRow(), guess.getCol());
-        }
     }
 
     /**
@@ -307,43 +245,12 @@ public class FieldFragment extends Fragment {
                 break;
 
             default:
-                // Do nothing.
+                clearGameResult();
                 break;
         }
     }
 
-    /**
-     * Clears previous game results.
-     */
     private void clearGameResult() {
         binding.gameResultText.setVisibility(View.INVISIBLE);
-    }
-
-    /**
-     * Adds points to the winner.
-     *
-     * @param result The result of the game.
-     * @param combo The coordinates of the combo collected by the player.
-     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
-     */
-    private void updateScore(GameResult result, Combo combo) {
-        if (result != GameResult.COMBO) {
-            return;
-        }
-        switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
-            case X:
-                //noinspection ConstantConditions
-                viewModel.setXScore(viewModel.getXScore().getValue() + 1);
-                break;
-
-            case O:
-                //noinspection ConstantConditions
-                viewModel.setOScore(viewModel.getOScore().getValue() + 1);
-                break;
-
-            default:
-                // Do nothing.
-                break;
-        }
     }
 }

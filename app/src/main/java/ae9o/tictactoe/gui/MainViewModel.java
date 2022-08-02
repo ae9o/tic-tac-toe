@@ -16,9 +16,16 @@
 
 package ae9o.tictactoe.gui;
 
+import ae9o.tictactoe.core.MtdfTicTacToeAi;
+import ae9o.tictactoe.core.TicTacToeAiExecutor;
+import ae9o.tictactoe.core.TicTacToeGame;
+import ae9o.tictactoe.core.TicTacToeGame.*;
 import ae9o.tictactoe.gui.utils.NonNullMutableLiveData;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
+
+import java.util.Random;
 
 /**
  * Provides an app-wide non-persistent (is reset when the app is terminated) centralized storage of game settings and
@@ -50,6 +57,24 @@ public class MainViewModel extends ViewModel {
     private final NonNullMutableLiveData<Integer> xScore = new NonNullMutableLiveData<>(0);
     /** Points earned by "O" player. */
     private final NonNullMutableLiveData<Integer> oScore = new NonNullMutableLiveData<>(0);
+
+    // TODO description
+    private Random random;
+
+    private final TicTacToeGame game = new TicTacToeGame();
+    private final TicTacToeAiExecutor ai = new TicTacToeAiExecutor(game, new MtdfTicTacToeAi());
+
+    private OnGameStartListener onGameStartListener;
+    private OnMarkSetListener onMarkSetListener;
+    private OnGameFinishListener onGameFinishListener;
+
+    public MainViewModel() {
+        addCloseable(ai);
+
+        game.setOnGameStartListener(this::onGameStart);
+        game.setOnMarkSetListener(this::onMarkSet);
+        game.setOnGameFinishListener(this::onGameFinish);
+    }
 
     public LiveData<Integer> getFieldSize() {
         return fieldSize;
@@ -106,5 +131,181 @@ public class MainViewModel extends ViewModel {
     public void clearScore() {
         xScore.setValue(0);
         oScore.setValue(0);
+    }
+
+    @Nullable
+    public OnGameStartListener getOnGameStartListener() {
+        return onGameStartListener;
+    }
+
+    public void setOnGameStartListener(@Nullable OnGameStartListener onGameStartListener) {
+        this.onGameStartListener = onGameStartListener;
+    }
+
+    @Nullable
+    public OnMarkSetListener getOnMarkSetListener() {
+        return onMarkSetListener;
+    }
+
+    public void setOnMarkSetListener(@Nullable OnMarkSetListener onMarkSetListener) {
+        this.onMarkSetListener = onMarkSetListener;
+    }
+
+    @Nullable
+    public OnGameFinishListener getOnGameFinishListener() {
+        return onGameFinishListener;
+    }
+
+    public void setOnGameFinishListener(@Nullable OnGameFinishListener onGameFinishListener) {
+        this.onGameFinishListener = onGameFinishListener;
+    }
+
+    private void notifyGameStarted(int fieldSize) {
+        if (onGameStartListener != null) {
+            onGameStartListener.onGameStart(fieldSize);
+        }
+    }
+
+    private void notifyGameFinished(GameResult result, Combo combo) {
+        if (onGameFinishListener != null) {
+            onGameFinishListener.onGameFinish(result, combo);
+        }
+    }
+
+    private void notifyMarkSet(TicTacToeGame.Mark mark, int row, int col) {
+        if (onMarkSetListener != null) {
+            onMarkSetListener.onMarkSet(mark, row, col);
+        }
+    }
+
+    private void onGameStart(int fieldSize) {
+        notifyGameStarted(fieldSize);
+        if (isAiStarts()) {
+            makeRandomFirstMove();
+        }
+    }
+
+    private void onGameFinish(GameResult result, Combo combo) {
+        updateScore(result, combo);
+        notifyGameFinished(result, combo);
+    }
+
+    private void onMarkSet(TicTacToeGame.Mark mark, int row, int col) {
+        notifyMarkSet(mark, row, col);
+    }
+
+    private void replayOnGameStart() {
+        if (game.isActive() || (game.getResult() != GameResult.UNDEFINED)) {
+            notifyGameStarted(game.getFieldSize());
+        }
+    }
+
+    private void replayOnGameFinish() {
+        if (game.getResult() != GameResult.UNDEFINED) {
+            notifyGameFinished(game.getResult(), game.getCombo());
+        }
+    }
+
+    private void replayOnMarkSet() {
+        for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
+            for (int col = 0; col < size; ++col) {
+                final Mark mark = game.getMark(row, col);
+                if (mark != Mark.EMPTY) {
+                    notifyMarkSet(mark, row, col);
+                }
+            }
+        }
+    }
+
+    public void replay() {
+        replayOnGameStart();
+        replayOnMarkSet();
+        replayOnGameFinish();
+    }
+
+    /**
+     * Starts a new game.
+     *
+     * <p>If the previous game is still active, it will automatically finish.
+     */
+    public void startGame() {
+        finishGame();
+        game.start(fieldSize.getValue(), swapMarks.getValue());
+    }
+
+    /**
+     * Finishes an active game, if any.
+     */
+    public void finishGame() {
+        if (game.isActive()) {
+            game.finish();
+        }
+    }
+
+    /**
+     * Places a mark in a random cell on an empty field.
+     */
+    private void makeRandomFirstMove() {
+        if (random == null) {
+            random = new Random();
+        }
+        final int size = game.getFieldSize();
+        game.setMark(random.nextInt(size), random.nextInt(size));
+    }
+
+    /**
+     * Sets a mark in the cell suggested by the AI.
+     */
+    private void makeAiMove() {
+        if (game.isActive() && aiEnabled.getValue()) {
+            // TODO
+        }
+    }
+
+    /**
+     * Adds points to the winner.
+     *
+     * @param result The result of the game.
+     * @param combo The coordinates of the combo collected by the player.
+     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
+     */
+    private void updateScore(GameResult result, Combo combo) {
+        if (result != GameResult.COMBO) {
+            return;
+        }
+        switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
+            case X:
+                xScore.setValue(xScore.getValue() + 1);
+                break;
+
+            case O:
+                oScore.setValue(oScore.getValue() + 1);
+                break;
+
+            default:
+                // Do nothing.
+                break;
+        }
+    }
+
+    public void setMark(int row, int col) {
+        if (!game.isActive()) {
+            return;
+        }
+
+        // TODO check previous 'Future<TicTacToeAi.Cell> guessNextMove()' state
+
+        if (!game.setMark(row, col)) {
+            return;
+        }
+        makeAiMove();
+    }
+
+    public Mark getCurrentTurn() {
+        return game.getCurrentTurn();
+    }
+
+    public Mark getNextTurn() {
+        return game.getNextTurn();
     }
 }
