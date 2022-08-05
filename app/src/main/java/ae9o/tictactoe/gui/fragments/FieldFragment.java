@@ -17,6 +17,9 @@
 package ae9o.tictactoe.gui.fragments;
 
 import ae9o.tictactoe.R;
+import ae9o.tictactoe.core.Async;
+import ae9o.tictactoe.core.TicTacToeAi.Cell;
+import ae9o.tictactoe.core.TicTacToeAiExecutor.GuessNextMoveResult;
 import ae9o.tictactoe.core.TicTacToeGame;
 import ae9o.tictactoe.core.TicTacToeGame.Combo;
 import ae9o.tictactoe.core.TicTacToeGame.GameResult;
@@ -89,6 +92,7 @@ public class FieldFragment extends Fragment {
 
         viewModel.setOnGameStartListener(this::onGameStart);
         viewModel.setOnMarkSetListener(this::onMarkSet);
+        viewModel.setOnAiGuessNextMoveCompleteListener(this::onAiGuessNextMoveComplete);
         viewModel.setOnGameFinishListener(this::onGameFinish);
 
         binding.fieldLayout.setOnCellClickListener(this::onCellClick);
@@ -110,6 +114,7 @@ public class FieldFragment extends Fragment {
 
         viewModel.setOnGameStartListener(null);
         viewModel.setOnMarkSetListener(null);
+        viewModel.setOnAiGuessNextMoveCompleteListener(null);
         viewModel.setOnGameFinishListener(null);
 
         binding = null;
@@ -166,7 +171,22 @@ public class FieldFragment extends Fragment {
      * @param col The col coordinate.
      */
     private void onCellClick(FieldCell cell, int row, int col) {
-        viewModel.setMark(row, col);
+        viewModel.setMark(row, col, true);
+    }
+
+    /**
+     * TODO description
+     *
+     * @param result
+     */
+    @Async
+    private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
+        requireActivity().runOnUiThread(() -> {
+            if (!result.isCanceled()) {
+                Cell cell = result.getCell();
+                viewModel.setMark(cell.getRow(), cell.getCol(), false);
+            }
+        });
     }
 
     /**

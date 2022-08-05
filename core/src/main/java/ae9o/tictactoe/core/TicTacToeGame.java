@@ -70,6 +70,9 @@ public class TicTacToeGame {
     private final long[][][] transpositionTable = new long[Mark.values().length][][];
     private long transpositionHash;
 
+    /** A copy of the current state of the game that can be safely passed to another thread. */
+    private TicTacToeGame snapshot;
+
     /** This event fires when a new game is started. */
     private OnGameStartListener onGameStartListener;
     /** This event fires when the game finishes. */
@@ -129,6 +132,36 @@ public class TicTacToeGame {
     }
 
     /**
+     * Returns a copy of the current state of the game that can be safely passed to another thread.
+     */
+    public TicTacToeGame getSnapshot() {
+        if (snapshot == null) {
+            snapshot = new TicTacToeGame();
+        }
+
+        snapshot.setFieldSize(fieldSize);
+        for (int i = 0; i < fieldSize; ++i) {
+            System.arraycopy(field[i], 0, snapshot.field[i], 0, fieldSize);
+        }
+
+        snapshot.setupTranspositionTable(false);
+        for (int i = 1 /* skip 0 */; i < transpositionTable.length; ++i) {
+            for (int j = 0; j < fieldSize; ++j) {
+                System.arraycopy(transpositionTable[i][j], 0, snapshot.transpositionTable[i][j], 0, fieldSize);
+            }
+        }
+
+        snapshot.combo.set(combo);
+        snapshot.active = active;
+        snapshot.result = result;
+        snapshot.emptyCellCount = emptyCellCount;
+        snapshot.currentTurnIndex = currentTurnIndex;
+        snapshot.transpositionHash = transpositionHash;
+
+        return snapshot;
+    }
+
+    /**
      * Starts a new game on a field of the given size.
      *
      * <p>When starting a new game, there should be no other one active. It must be explicitly finished before
@@ -144,16 +177,11 @@ public class TicTacToeGame {
         active = true;
 
         setupEmptyField(fieldSize);
-        setupTranspositionTable();
+        setupTranspositionTable(true);
         setupTurns(swapMarks);
         result = GameResult.UNDEFINED;
 
         notifyGameStarted();
-    }
-
-    public TicTacToeGame getSnapshot() {
-        // TODO
-        return null;
     }
 
     /**
@@ -174,8 +202,11 @@ public class TicTacToeGame {
      *
      * <p>If the game field size is reduced, the previous version of the transposition table is kept to avoid
      * unnecessary garbage collection.
+     *
+     * @param fill True if the table is to be filled with numbers,
+     *             False will only allocate the table without filling.
      */
-    private void setupTranspositionTable() {
+    private void setupTranspositionTable(boolean fill) {
         transpositionHash = 0L;
 
         if ((transpositionTable[0] != null) && (transpositionTable[0].length >= fieldSize)) {
@@ -186,7 +217,7 @@ public class TicTacToeGame {
             transpositionTable[i] = new long[fieldSize][];
             for (int j = 0; j < fieldSize; ++j) {
                 transpositionTable[i][j] = new long[fieldSize];
-                if (i > 0) {
+                if (fill && (i > 0)) {
                     // The transposition table for EMPTY mark is left filled with zeros so that the hash of the start
                     // transposition is zero.
                     for (int k = 0; k < fieldSize; ++k) {
@@ -242,6 +273,7 @@ public class TicTacToeGame {
             return;
         }
         this.fieldSize = fieldSize;
+
         comboSize = Math.min(fieldSize, MAX_COMBO_SIZE);
 
         if ((field != null) && (field.length >= fieldSize)) {
@@ -632,6 +664,13 @@ public class TicTacToeGame {
 
         public int getStopCol() {
             return stopCol;
+        }
+
+        private void set(Combo other) {
+            startRow = other.startRow;
+            startCol = other.startCol;
+            stopRow = other.stopRow;
+            stopCol = other.stopCol;
         }
     }
 

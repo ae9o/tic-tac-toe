@@ -67,8 +67,6 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
      * is ready to appear or when an opponent is close to winning. */
     private static final int SEQUENCE_POINTS = 100000000;
     private static final int MIN_REWARDED_SEQUENCE = 3;
-    /** The limit on the algorithm running time in nanoseconds (default is 1 second). */
-    private static final long MAX_SEARCH_TIME = 1000000000L;
 
     /** The core of the game. */
     private TicTacToeGame game;
@@ -206,8 +204,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
                     // return it as the result of the work of the AI.
                     if (tmp > g) {
                         g = tmp;
-                        guess.setRow(row);
-                        guess.setCol(col);
+                        guess.set(row, col);
                     }
 
                     a = Math.max(a, g);

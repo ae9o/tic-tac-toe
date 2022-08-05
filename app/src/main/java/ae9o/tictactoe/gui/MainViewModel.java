@@ -16,8 +16,11 @@
 
 package ae9o.tictactoe.gui;
 
+import ae9o.tictactoe.core.Async;
 import ae9o.tictactoe.core.MtdfTicTacToeAi;
 import ae9o.tictactoe.core.TicTacToeAiExecutor;
+import ae9o.tictactoe.core.TicTacToeAiExecutor.GuessNextMoveResult;
+import ae9o.tictactoe.core.TicTacToeAiExecutor.OnAiGuessNextMoveCompleteListener;
 import ae9o.tictactoe.core.TicTacToeGame;
 import ae9o.tictactoe.core.TicTacToeGame.*;
 import ae9o.tictactoe.gui.utils.NonNullMutableLiveData;
@@ -58,22 +61,26 @@ public class MainViewModel extends ViewModel {
     /** Points earned by "O" player. */
     private final NonNullMutableLiveData<Integer> oScore = new NonNullMutableLiveData<>(0);
 
-    // TODO description
     private Random random;
 
     private final TicTacToeGame game = new TicTacToeGame();
-    private final TicTacToeAiExecutor ai = new TicTacToeAiExecutor(game, new MtdfTicTacToeAi());
+    private final TicTacToeAiExecutor aiExecutor = new TicTacToeAiExecutor(new MtdfTicTacToeAi());
+    private boolean aiTurn;
 
     private OnGameStartListener onGameStartListener;
     private OnMarkSetListener onMarkSetListener;
     private OnGameFinishListener onGameFinishListener;
+    private OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener;
 
     public MainViewModel() {
-        addCloseable(ai);
-
         game.setOnGameStartListener(this::onGameStart);
         game.setOnMarkSetListener(this::onMarkSet);
         game.setOnGameFinishListener(this::onGameFinish);
+
+        aiExecutor.setOnAiGuessNextMoveCompleteListener(this::onAiGuessNextMoveComplete);
+        addCloseable(aiExecutor);
+
+        startGame();
     }
 
     public LiveData<Integer> getFieldSize() {
@@ -156,6 +163,16 @@ public class MainViewModel extends ViewModel {
         return onGameFinishListener;
     }
 
+    @Nullable
+    public OnAiGuessNextMoveCompleteListener getOnAiGuessNextMoveCompleteListener() {
+        return onAiGuessNextMoveCompleteListener;
+    }
+
+    public void setOnAiGuessNextMoveCompleteListener(
+            @Nullable OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener) {
+        this.onAiGuessNextMoveCompleteListener = onAiGuessNextMoveCompleteListener;
+    }
+
     public void setOnGameFinishListener(@Nullable OnGameFinishListener onGameFinishListener) {
         this.onGameFinishListener = onGameFinishListener;
     }
@@ -172,17 +189,22 @@ public class MainViewModel extends ViewModel {
         }
     }
 
-    private void notifyMarkSet(TicTacToeGame.Mark mark, int row, int col) {
+    private void notifyMarkSet(Mark mark, int row, int col) {
         if (onMarkSetListener != null) {
             onMarkSetListener.onMarkSet(mark, row, col);
         }
     }
 
+    @Async
+    private void notifyAiGuessNextMoveComplete(GuessNextMoveResult result) {
+        if (onAiGuessNextMoveCompleteListener != null) {
+            onAiGuessNextMoveCompleteListener.onAiGuessNextMoveComplete(result);
+        }
+    }
+
     private void onGameStart(int fieldSize) {
         notifyGameStarted(fieldSize);
-        if (isAiStarts()) {
-            makeRandomFirstMove();
-        }
+        makeRandomFirstMove();
     }
 
     private void onGameFinish(GameResult result, Combo combo) {
@@ -190,8 +212,13 @@ public class MainViewModel extends ViewModel {
         notifyGameFinished(result, combo);
     }
 
-    private void onMarkSet(TicTacToeGame.Mark mark, int row, int col) {
+    private void onMarkSet(Mark mark, int row, int col) {
         notifyMarkSet(mark, row, col);
+    }
+
+    @Async
+    private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
+        notifyAiGuessNextMoveComplete(result);
     }
 
     private void replayOnGameStart() {
@@ -223,6 +250,14 @@ public class MainViewModel extends ViewModel {
         replayOnGameFinish();
     }
 
+    public Mark getCurrentTurn() {
+        return game.getCurrentTurn();
+    }
+
+    public Mark getNextTurn() {
+        return game.getNextTurn();
+    }
+
     /**
      * Starts a new game.
      *
@@ -238,27 +273,8 @@ public class MainViewModel extends ViewModel {
      */
     public void finishGame() {
         if (game.isActive()) {
+            aiExecutor.cancelTask();
             game.finish();
-        }
-    }
-
-    /**
-     * Places a mark in a random cell on an empty field.
-     */
-    private void makeRandomFirstMove() {
-        if (random == null) {
-            random = new Random();
-        }
-        final int size = game.getFieldSize();
-        game.setMark(random.nextInt(size), random.nextInt(size));
-    }
-
-    /**
-     * Sets a mark in the cell suggested by the AI.
-     */
-    private void makeAiMove() {
-        if (game.isActive() && aiEnabled.getValue()) {
-            // TODO
         }
     }
 
@@ -288,24 +304,36 @@ public class MainViewModel extends ViewModel {
         }
     }
 
-    public void setMark(int row, int col) {
+    /**
+     * Places a mark in a random cell on an empty field.
+     */
+    private void makeRandomFirstMove() {
+        aiTurn = isAiStarts();
+        if (!aiTurn) {
+            return;
+        }
+        if (random == null) {
+            random = new Random();
+        }
+        final int size = game.getFieldSize();
+        setMark(random.nextInt(size), random.nextInt(size), false);
+    }
+
+    public void setMark(int row, int col, boolean fromUser) {
         if (!game.isActive()) {
             return;
         }
-
-        // TODO check previous 'Future<TicTacToeAi.Cell> guessNextMove()' state
-
+        if (aiTurn == fromUser) {
+            return;
+        }
         if (!game.setMark(row, col)) {
             return;
         }
-        makeAiMove();
-    }
-
-    public Mark getCurrentTurn() {
-        return game.getCurrentTurn();
-    }
-
-    public Mark getNextTurn() {
-        return game.getNextTurn();
+        if (game.isActive() && aiEnabled.getValue()) {
+            aiTurn = !aiTurn;
+            if (aiTurn) {
+                aiExecutor.guessNextMoveAsync(game.getSnapshot());
+            }
+        }
     }
 }
