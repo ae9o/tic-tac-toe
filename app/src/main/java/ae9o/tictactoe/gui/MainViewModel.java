@@ -18,12 +18,15 @@ package ae9o.tictactoe.gui;
 
 import ae9o.tictactoe.core.Async;
 import ae9o.tictactoe.core.MtdfTicTacToeAi;
+import ae9o.tictactoe.core.TicTacToeAi.Cell;
 import ae9o.tictactoe.core.TicTacToeAiExecutor;
 import ae9o.tictactoe.core.TicTacToeAiExecutor.GuessNextMoveResult;
 import ae9o.tictactoe.core.TicTacToeAiExecutor.OnAiGuessNextMoveCompleteListener;
 import ae9o.tictactoe.core.TicTacToeGame;
 import ae9o.tictactoe.core.TicTacToeGame.*;
 import ae9o.tictactoe.gui.utils.NonNullMutableLiveData;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
@@ -71,6 +74,8 @@ public class MainViewModel extends ViewModel {
 
     /** AI running on a separate thread. */
     private final TicTacToeAiExecutor aiExecutor = new TicTacToeAiExecutor(new MtdfTicTacToeAi());
+    /** Handler to post AI guesses to the main thread. */
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     /** Flag to block user input. */
     private boolean aiTurn;
     /** To select random coordinates on the first move. */
@@ -80,7 +85,6 @@ public class MainViewModel extends ViewModel {
     private OnGameStartListener onGameStartListener;
     private OnMarkSetListener onMarkSetListener;
     private OnGameFinishListener onGameFinishListener;
-    private OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener;
 
     /**
      * Creates a MainViewModel containing the game automatically started with default settings.
@@ -195,11 +199,6 @@ public class MainViewModel extends ViewModel {
      *
      * <p>After the user's turn, automatically starts the work of the AI, if it is enabled in the settings.
      *
-     * <p>To receive AI results, you must subscribe to the
-     * {@link MainViewModel#setOnAiGuessNextMoveCompleteListener(OnAiGuessNextMoveCompleteListener)} event. This event
-     * is fired <strong>asynchronously</strong> on a separate thread. Having received it, you need to transfer it to the
-     * UI thread using {@code Activity#runOnUiThread(Runnable)}.
-     *
      * @param row The row coordinate of the cell.
      * @param col The col coordinate of the cell.
      * @param fromUser True if the action was initiated by the user and not by the AI;
@@ -261,14 +260,21 @@ public class MainViewModel extends ViewModel {
     }
 
     /**
-     * Intercepts to the
+     * Listens to the
      * {@link TicTacToeAiExecutor#setOnAiGuessNextMoveCompleteListener(OnAiGuessNextMoveCompleteListener)} event.
+     *
+     * <p>Posts AI guesses to the main thread.
      *
      * @param result The results of AI work.
      */
     @Async
     private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
-        notifyAiGuessNextMoveComplete(result);
+        mainHandler.post(() -> {
+            if (!result.isCanceled()) {
+                Cell cell = result.getCell();
+                setMark(cell.getRow(), cell.getCol(), false);
+            }
+        });
     }
 
     public Mark getCurrentTurn() {
@@ -359,16 +365,6 @@ public class MainViewModel extends ViewModel {
         return onGameFinishListener;
     }
 
-    @Nullable
-    public OnAiGuessNextMoveCompleteListener getOnAiGuessNextMoveCompleteListener() {
-        return onAiGuessNextMoveCompleteListener;
-    }
-
-    public void setOnAiGuessNextMoveCompleteListener(
-            @Nullable OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener) {
-        this.onAiGuessNextMoveCompleteListener = onAiGuessNextMoveCompleteListener;
-    }
-
     public void setOnGameFinishListener(@Nullable OnGameFinishListener onGameFinishListener) {
         this.onGameFinishListener = onGameFinishListener;
     }
@@ -388,13 +384,6 @@ public class MainViewModel extends ViewModel {
     private void notifyMarkSet(Mark mark, int row, int col) {
         if (onMarkSetListener != null) {
             onMarkSetListener.onMarkSet(mark, row, col);
-        }
-    }
-
-    @Async
-    private void notifyAiGuessNextMoveComplete(GuessNextMoveResult result) {
-        if (onAiGuessNextMoveCompleteListener != null) {
-            onAiGuessNextMoveCompleteListener.onAiGuessNextMoveComplete(result);
         }
     }
 }
