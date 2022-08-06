@@ -34,7 +34,7 @@ import androidx.lifecycle.ViewModel;
 import java.util.Random;
 
 /**
- * MVVM for the MainActivity.
+ * ViewModel for the MainActivity.
  *
  * <p>Encapsulates direct interaction with the game core and AI.
  *

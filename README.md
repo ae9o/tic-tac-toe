@@ -19,6 +19,25 @@ scope of possible strategies and makes the game tense. Awesome!
 
 ## Implementation details
 
+### App
+
+The app is divided into several layers: model (core), view and view-model.
+
+The model (core) is hosted in the separate gradle module and written in pure Java<sup>TM</sup>. This module contains
+the essential game logic and is independent of other parts of the app.
+
+The view layer consists of a set of different Fragments controlled by a NavController. This layer is only for
+displaying events occurring in the view-model. There is no logic in it.
+
+The view-model is a layer between the model (core) and the view. Only this layer can directly call the methods of the
+model (core) and respond to events occurring in it.
+
+Such structure reduces the dependence of parts of the app and makes it easier to extend it. For example, described 
+organization of layers makes it easy to work with the Activity lifecycle in Android. Since the view-model is separate 
+from the view layer (Activities and Fragments set) and does not depend on its lifecycle, when the Activity is recreated
+(for example, when the screen is rotated), information about the current state of the game can be easily restored from 
+the view-model.
+
 ### AI
 
 AI is based on the MTD(f) algorithm described by Aske Plaat<sup>[\[1\]](#references)</sup>. This is an advanced version
@@ -38,6 +57,8 @@ which is calculated when the maximum search depth is reached. The version of the
 implementation gives a good result. But there is no limit to perfection. If you can find a better option please let me
 know and share with the community.
 
+AI works in a separate thread.
+
 ### Code optimization
 
 The core of the game is written in pure Java<sup>TM</sup> and can be easily ported from Android<sup>TM</sup> to any 
@@ -51,9 +72,6 @@ incompatible things. Everything is written in such an approach that the garbage 
 
 Colorful animations, additional settings and the ability to play on the same local network will appear in the game over
 time. But the timing is not known, as I am working on the project in my spare time.
-
-The current version is single-threaded. This fact becomes noticeable when playing on very large fields. It is planned to
-move AI to a separate thread and parallelize its calculations.
 
 ## References
 
