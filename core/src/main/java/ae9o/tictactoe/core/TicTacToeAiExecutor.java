@@ -50,7 +50,7 @@ public class TicTacToeAiExecutor implements Closeable {
     public void close() {
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(TicTacToeAi.MAX_SEARCH_TIME, TimeUnit.NANOSECONDS)) {
+            if (!executorService.awaitTermination(TicTacToeAi.MAX_SEARCH_TIME, TimeUnit.MILLISECONDS)) {
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {

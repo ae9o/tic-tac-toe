@@ -117,14 +117,14 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         comboSize = game.getComboSize();
 
         setupPool();
-        final long startTime = System.nanoTime();
+        final long startTime = System.currentTimeMillis();
         int firstGuess = 0;
         maxDepth = 1;
         do {
             maxDepthTouched = false;
             firstGuess = mtdf(firstGuess);
             ++maxDepth;
-        } while (maxDepthTouched && !Thread.interrupted() && (System.nanoTime() - startTime < MAX_SEARCH_TIME));
+        } while (maxDepthTouched && !Thread.interrupted() && (System.currentTimeMillis() - startTime < MAX_SEARCH_TIME));
         disposePool();
 
         return guess;

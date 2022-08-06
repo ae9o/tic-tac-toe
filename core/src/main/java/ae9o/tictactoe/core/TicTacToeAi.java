@@ -20,8 +20,8 @@ package ae9o.tictactoe.core;
  * An interface to be implemented by the AIs intended for this game.
  */
 public interface TicTacToeAi {
-    /** The limit on the algorithm running time in nanoseconds (default is 1 second). */
-    long MAX_SEARCH_TIME = 1000000000L;
+    /** The limit on the algorithm running time in milliseconds (default is 1 second). */
+    long MAX_SEARCH_TIME = 1000L;
 
     /**
      * Returns the best move according to this AI for the given game state.
