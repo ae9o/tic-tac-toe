@@ -17,17 +17,18 @@
 package ae9o.tictactoe.core;
 
 /**
- * TODO description
+ * An interface to be implemented by the AIs intended for this game.
  */
 public interface TicTacToeAi {
     /** The limit on the algorithm running time in nanoseconds (default is 1 second). */
     long MAX_SEARCH_TIME = 1000000000L;
 
     /**
-     * TODO description
+     * Returns the best move according to this AI for the given game state.
      *
-     * @param snapshot
-     * @return
+     * @param snapshot A fixed snapshot of the game in a particular state. This snapshot must not be changed by external
+     *                 code during AI work. Some AI implementations may process the snapshot on other threads.
+     * @return The best move according to this AI for the given game state.
      */
     Cell guessNextMove(TicTacToeGame snapshot);
 

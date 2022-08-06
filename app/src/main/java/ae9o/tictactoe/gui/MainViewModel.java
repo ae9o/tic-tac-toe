@@ -31,10 +31,15 @@ import androidx.lifecycle.ViewModel;
 import java.util.Random;
 
 /**
- * Provides an app-wide non-persistent (is reset when the app is terminated) centralized storage of game settings and
+ * MVVM for the MainActivity.
+ *
+ * <p>Encapsulates direct interaction with the game core and AI.
+ *
+ * <p>Provides an app-wide non-persistent (is reset when the app is terminated) centralized storage of game settings and
  * makes them independent of the Activity life cycle.
  *
  * @see <a href="https://developer.android.com/guide/components/activities/activity-lifecycle">Activity Lifecycle</a>
+ * @see <a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel">Model–view–viewmodel</a>
  */
 public class MainViewModel extends ViewModel {
 
@@ -61,17 +66,25 @@ public class MainViewModel extends ViewModel {
     /** Points earned by "O" player. */
     private final NonNullMutableLiveData<Integer> oScore = new NonNullMutableLiveData<>(0);
 
+    /** The core of the game. */
+    private final TicTacToeGame game = new TicTacToeGame();
+
+    /** AI running on a separate thread. */
+    private final TicTacToeAiExecutor aiExecutor = new TicTacToeAiExecutor(new MtdfTicTacToeAi());
+    /** Flag to block user input. */
+    private boolean aiTurn;
+    /** To select random coordinates on the first move. */
     private Random random;
 
-    private final TicTacToeGame game = new TicTacToeGame();
-    private final TicTacToeAiExecutor aiExecutor = new TicTacToeAiExecutor(new MtdfTicTacToeAi());
-    private boolean aiTurn;
-
+    /** Wrappers over various game events that need to be pre-processed before being passed to the presentation layer. */
     private OnGameStartListener onGameStartListener;
     private OnMarkSetListener onMarkSetListener;
     private OnGameFinishListener onGameFinishListener;
     private OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener;
 
+    /**
+     * Creates a MainViewModel containing the game automatically started with default settings.
+     */
     public MainViewModel() {
         game.setOnGameStartListener(this::onGameStart);
         game.setOnMarkSetListener(this::onMarkSet);
@@ -81,6 +94,189 @@ public class MainViewModel extends ViewModel {
         addCloseable(aiExecutor);
 
         startGame();
+    }
+
+    /**
+     * Replays all events that have occurred since the beginning of the game. Used to restore the state of the Activity
+     * after it has been recreated.
+     */
+    public void replay() {
+        replayOnGameStart();
+        replayOnMarkSet();
+        replayOnGameFinish();
+    }
+
+    private void replayOnGameStart() {
+        if (game.isActive() || (game.getResult() != GameResult.UNDEFINED)) {
+            notifyGameStarted(game.getFieldSize());
+        }
+    }
+
+    private void replayOnGameFinish() {
+        if (game.getResult() != GameResult.UNDEFINED) {
+            notifyGameFinished(game.getResult(), game.getCombo());
+        }
+    }
+
+    private void replayOnMarkSet() {
+        for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
+            for (int col = 0; col < size; ++col) {
+                final Mark mark = game.getMark(row, col);
+                if (mark != Mark.EMPTY) {
+                    notifyMarkSet(mark, row, col);
+                }
+            }
+        }
+    }
+
+    /**
+     * Starts a new game.
+     *
+     * <p>If the previous game is still active, it will automatically finish.
+     */
+    public void startGame() {
+        finishGame();
+        game.start(fieldSize.getValue(), swapMarks.getValue());
+    }
+
+    /**
+     * Finishes an active game, if any.
+     */
+    public void finishGame() {
+        if (game.isActive()) {
+            aiExecutor.cancelTask();
+            game.finish();
+        }
+    }
+
+    /**
+     * Adds points to the winner.
+     *
+     * @param result The result of the game.
+     * @param combo The coordinates of the combo collected by the player.
+     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
+     */
+    private void updateScore(GameResult result, Combo combo) {
+        if (result != GameResult.COMBO) {
+            return;
+        }
+        switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
+            case X:
+                xScore.setValue(xScore.getValue() + 1);
+                break;
+
+            case O:
+                oScore.setValue(oScore.getValue() + 1);
+                break;
+
+            default:
+                // Do nothing.
+                break;
+        }
+    }
+
+    /**
+     * Places a mark in a random cell on an empty field if the AI is activated.
+     */
+    private void makeRandomFirstMove() {
+        aiTurn = isAiStarts();
+        if (!aiTurn) {
+            return;
+        }
+        if (random == null) {
+            random = new Random();
+        }
+        final int size = game.getFieldSize();
+        setMark(random.nextInt(size), random.nextInt(size), false);
+    }
+
+    /**
+     * Sets a mark of the current player in the specified cell of the field.
+     *
+     * <p>After the user's turn, automatically starts the work of the AI, if it is enabled in the settings.
+     *
+     * <p>To receive AI results, you must subscribe to the
+     * {@link MainViewModel#setOnAiGuessNextMoveCompleteListener(OnAiGuessNextMoveCompleteListener)} event. This event
+     * is fired <strong>asynchronously</strong> on a separate thread. Having received it, you need to transfer it to the
+     * UI thread using {@code Activity#runOnUiThread(Runnable)}.
+     *
+     * @param row The row coordinate of the cell.
+     * @param col The col coordinate of the cell.
+     * @param fromUser True if the action was initiated by the user and not by the AI;
+     *                 False if the action was initiated by the AI.
+     */
+    public void setMark(int row, int col, boolean fromUser) {
+        if (!game.isActive()) {
+            return;
+        }
+        if (aiTurn == fromUser) {
+            return;
+        }
+        if (!game.setMark(row, col)) {
+            return;
+        }
+        if (game.isActive() && aiEnabled.getValue()) {
+            aiTurn = !aiTurn;
+            if (aiTurn) {
+                aiExecutor.guessNextMoveAsync(game.getSnapshot());
+            }
+        }
+    }
+
+    /**
+     * Intercepts to the {@link TicTacToeGame#setOnGameStartListener(OnGameStartListener)} event.
+     *
+     * <p>Makes a random first move if AI is enabled in settings.
+     *
+     * @param fieldSize The size of the field in the started game.
+     */
+    private void onGameStart(int fieldSize) {
+        notifyGameStarted(fieldSize);
+        makeRandomFirstMove();
+    }
+
+    /**
+     * Intercepts to the {@link TicTacToeGame#setOnGameFinishListener(OnGameFinishListener)} event.
+     *
+     * @param result The result of the game.
+     * @param combo The coordinates of the combo collected by the player.
+     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
+     */
+    private void onGameFinish(GameResult result, Combo combo) {
+        updateScore(result, combo);
+        notifyGameFinished(result, combo);
+    }
+
+    /**
+     * Intercepts to the {@link TicTacToeGame#setOnMarkSetListener(TicTacToeGame.OnMarkSetListener)} event.
+     *
+     * <p>Renders the set mark.
+     *
+     * @param mark The mark set.
+     * @param row The row coordinate.
+     * @param col The col coordinate.
+     */
+    private void onMarkSet(Mark mark, int row, int col) {
+        notifyMarkSet(mark, row, col);
+    }
+
+    /**
+     * Intercepts to the
+     * {@link TicTacToeAiExecutor#setOnAiGuessNextMoveCompleteListener(OnAiGuessNextMoveCompleteListener)} event.
+     *
+     * @param result The results of AI work.
+     */
+    @Async
+    private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
+        notifyAiGuessNextMoveComplete(result);
+    }
+
+    public Mark getCurrentTurn() {
+        return game.getCurrentTurn();
+    }
+
+    public Mark getNextTurn() {
+        return game.getNextTurn();
     }
 
     public LiveData<Integer> getFieldSize() {
@@ -199,141 +395,6 @@ public class MainViewModel extends ViewModel {
     private void notifyAiGuessNextMoveComplete(GuessNextMoveResult result) {
         if (onAiGuessNextMoveCompleteListener != null) {
             onAiGuessNextMoveCompleteListener.onAiGuessNextMoveComplete(result);
-        }
-    }
-
-    private void onGameStart(int fieldSize) {
-        notifyGameStarted(fieldSize);
-        makeRandomFirstMove();
-    }
-
-    private void onGameFinish(GameResult result, Combo combo) {
-        updateScore(result, combo);
-        notifyGameFinished(result, combo);
-    }
-
-    private void onMarkSet(Mark mark, int row, int col) {
-        notifyMarkSet(mark, row, col);
-    }
-
-    @Async
-    private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
-        notifyAiGuessNextMoveComplete(result);
-    }
-
-    private void replayOnGameStart() {
-        if (game.isActive() || (game.getResult() != GameResult.UNDEFINED)) {
-            notifyGameStarted(game.getFieldSize());
-        }
-    }
-
-    private void replayOnGameFinish() {
-        if (game.getResult() != GameResult.UNDEFINED) {
-            notifyGameFinished(game.getResult(), game.getCombo());
-        }
-    }
-
-    private void replayOnMarkSet() {
-        for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
-            for (int col = 0; col < size; ++col) {
-                final Mark mark = game.getMark(row, col);
-                if (mark != Mark.EMPTY) {
-                    notifyMarkSet(mark, row, col);
-                }
-            }
-        }
-    }
-
-    public void replay() {
-        replayOnGameStart();
-        replayOnMarkSet();
-        replayOnGameFinish();
-    }
-
-    public Mark getCurrentTurn() {
-        return game.getCurrentTurn();
-    }
-
-    public Mark getNextTurn() {
-        return game.getNextTurn();
-    }
-
-    /**
-     * Starts a new game.
-     *
-     * <p>If the previous game is still active, it will automatically finish.
-     */
-    public void startGame() {
-        finishGame();
-        game.start(fieldSize.getValue(), swapMarks.getValue());
-    }
-
-    /**
-     * Finishes an active game, if any.
-     */
-    public void finishGame() {
-        if (game.isActive()) {
-            aiExecutor.cancelTask();
-            game.finish();
-        }
-    }
-
-    /**
-     * Adds points to the winner.
-     *
-     * @param result The result of the game.
-     * @param combo The coordinates of the combo collected by the player.
-     *              Defined when the {@code result} is {@code TicTacToeGame.GameResult.COMBO}.
-     */
-    private void updateScore(GameResult result, Combo combo) {
-        if (result != GameResult.COMBO) {
-            return;
-        }
-        switch (game.getMark(combo.getStartRow(), combo.getStartCol())) {
-            case X:
-                xScore.setValue(xScore.getValue() + 1);
-                break;
-
-            case O:
-                oScore.setValue(oScore.getValue() + 1);
-                break;
-
-            default:
-                // Do nothing.
-                break;
-        }
-    }
-
-    /**
-     * Places a mark in a random cell on an empty field.
-     */
-    private void makeRandomFirstMove() {
-        aiTurn = isAiStarts();
-        if (!aiTurn) {
-            return;
-        }
-        if (random == null) {
-            random = new Random();
-        }
-        final int size = game.getFieldSize();
-        setMark(random.nextInt(size), random.nextInt(size), false);
-    }
-
-    public void setMark(int row, int col, boolean fromUser) {
-        if (!game.isActive()) {
-            return;
-        }
-        if (aiTurn == fromUser) {
-            return;
-        }
-        if (!game.setMark(row, col)) {
-            return;
-        }
-        if (game.isActive() && aiEnabled.getValue()) {
-            aiTurn = !aiTurn;
-            if (aiTurn) {
-                aiExecutor.guessNextMoveAsync(game.getSnapshot());
-            }
         }
     }
 }

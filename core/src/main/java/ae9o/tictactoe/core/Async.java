@@ -17,7 +17,7 @@
 package ae9o.tictactoe.core;
 
 /**
- * A helper for explicitly denoting methods that run on other threads.
+ * A helper annotation for explicitly marking methods that run on other threads.
  */
 public @interface Async {
 }

@@ -19,6 +19,7 @@ package ae9o.tictactoe.gui.fragments;
 import ae9o.tictactoe.R;
 import ae9o.tictactoe.core.Async;
 import ae9o.tictactoe.core.TicTacToeAi.Cell;
+import ae9o.tictactoe.core.TicTacToeAiExecutor;
 import ae9o.tictactoe.core.TicTacToeAiExecutor.GuessNextMoveResult;
 import ae9o.tictactoe.core.TicTacToeGame;
 import ae9o.tictactoe.core.TicTacToeGame.Combo;
@@ -121,20 +122,20 @@ public class FieldFragment extends Fragment {
     }
 
     /**
-     * Listens to the {@link TicTacToeGame#setOnGameStartListener(TicTacToeGame.OnGameStartListener)} event.
+     * Listens to the {@link MainViewModel#setOnGameStartListener(TicTacToeGame.OnGameStartListener)} event.
      *
      * <p>Prepares the UI of a field of the appropriate size.
      *
-     * @param size The size of the field in the started game.
+     * @param fieldSize The size of the field in the started game.
      */
-    private void onGameStart(int size) {
+    private void onGameStart(int fieldSize) {
         clearGameResult();
         setupMarkColors();
-        binding.fieldLayout.compose(size);
+        binding.fieldLayout.compose(fieldSize);
     }
 
     /**
-     * Listens to the {@link TicTacToeGame#setOnGameFinishListener(TicTacToeGame.OnGameFinishListener)} event.
+     * Listens to the {@link MainViewModel#setOnGameFinishListener(TicTacToeGame.OnGameFinishListener)} event.
      *
      * <p>Renders the result of the game.
      *
@@ -147,7 +148,7 @@ public class FieldFragment extends Fragment {
     }
 
     /**
-     * Listens to the {@link TicTacToeGame#setOnMarkSetListener(TicTacToeGame.OnMarkSetListener)} event.
+     * Listens to the {@link MainViewModel#setOnMarkSetListener(TicTacToeGame.OnMarkSetListener)} event.
      *
      * <p>Renders the set mark.
      *
@@ -175,9 +176,13 @@ public class FieldFragment extends Fragment {
     }
 
     /**
-     * TODO description
+     * Listens to the
+     * {@link MainViewModel#setOnAiGuessNextMoveCompleteListener(TicTacToeAiExecutor.OnAiGuessNextMoveCompleteListener)}
+     * event.
      *
-     * @param result
+     * <p>Redirects AI result processing to the UI thread.
+     *
+     * @param result The results of AI work.
      */
     @Async
     private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
