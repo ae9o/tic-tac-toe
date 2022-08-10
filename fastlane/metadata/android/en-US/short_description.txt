@@ -1,1 +1,1 @@
-Advanced tic-tac-toe for custom fields with smart AI opponent
+Play tic-tac-toe on a custom field vs smart AI

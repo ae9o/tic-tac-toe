@@ -1,0 +1,2 @@
+- AI moved to a separate thread
+- Code tweaks
