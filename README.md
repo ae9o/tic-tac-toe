@@ -32,10 +32,10 @@ displaying events occurring in the view-model. There is no logic in it.
 The view-model is a layer between the model (core) and the view. Only this layer can directly call the methods of the
 model (core) and respond to events occurring in it.
 
-Such structure reduces the dependence of parts of the app and makes it easier to extend it. For example, described 
-organization of layers makes it easy to work with the Activity lifecycle in Android. Since the view-model is separate 
-from the view layer (Activities and Fragments set) and does not depend on its lifecycle, when the Activity is recreated
-(for example, when the screen is rotated), information about the current state of the game can be easily restored from 
+Such structure reduces the number of dependencies and makes it easier to extend the app. For example, described 
+organization of layers simplifies the work with the lifecycle of Activity in Android. Since the view-model is separate 
+from the view layer (Activities and Fragments) and does not depend on its lifecycle, when an Activity is recreated (for
+example, when the screen is rotated), information about the current state of the game can be easily restored from
 the view-model.
 
 ### AI
