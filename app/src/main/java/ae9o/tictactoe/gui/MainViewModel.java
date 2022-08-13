@@ -16,14 +16,17 @@
 
 package ae9o.tictactoe.gui;
 
-import ae9o.tictactoe.core.Async;
-import ae9o.tictactoe.core.MtdfTicTacToeAi;
-import ae9o.tictactoe.core.TicTacToeAi.Cell;
-import ae9o.tictactoe.core.TicTacToeAiExecutor;
-import ae9o.tictactoe.core.TicTacToeAiExecutor.GuessNextMoveResult;
-import ae9o.tictactoe.core.TicTacToeAiExecutor.OnAiGuessNextMoveCompleteListener;
-import ae9o.tictactoe.core.TicTacToeGame;
-import ae9o.tictactoe.core.TicTacToeGame.*;
+import ae9o.tictactoe.game.Combo;
+import ae9o.tictactoe.game.GameResult;
+import ae9o.tictactoe.game.Mark;
+import ae9o.tictactoe.utils.Async;
+import ae9o.tictactoe.ai.MtdfTicTacToeAi;
+import ae9o.tictactoe.ai.TicTacToeAiResult;
+import ae9o.tictactoe.ai.TicTacToeAiExecutor;
+import ae9o.tictactoe.ai.TicTacToeAiExecutorResult;
+import ae9o.tictactoe.ai.TicTacToeAiExecutor.OnTicTacToeAiExecutorTaskCompleteListener;
+import ae9o.tictactoe.game.TicTacToeGame;
+import ae9o.tictactoe.game.TicTacToeGame.*;
 import ae9o.tictactoe.gui.utils.NonNullMutableLiveData;
 import android.os.Handler;
 import android.os.Looper;
@@ -94,7 +97,7 @@ public class MainViewModel extends ViewModel {
         game.setOnMarkSetListener(this::onMarkSet);
         game.setOnGameFinishListener(this::onGameFinish);
 
-        aiExecutor.setOnAiGuessNextMoveCompleteListener(this::onAiGuessNextMoveComplete);
+        aiExecutor.setOnTicTacToeAiExecutorTaskCompleteListener(this::onTicTacToeAiExecutorTaskComplete);
         addCloseable(aiExecutor);
 
         startGame();
@@ -261,18 +264,19 @@ public class MainViewModel extends ViewModel {
 
     /**
      * Listens to the
-     * {@link TicTacToeAiExecutor#setOnAiGuessNextMoveCompleteListener(OnAiGuessNextMoveCompleteListener)} event.
+     * {@link TicTacToeAiExecutor#setOnTicTacToeAiExecutorTaskCompleteListener(OnTicTacToeAiExecutorTaskCompleteListener)}
+     * event.
      *
      * <p>Posts AI guesses to the main thread.
      *
-     * @param result The results of AI work.
+     * @param executorResult The results of AI work.
      */
     @Async
-    private void onAiGuessNextMoveComplete(GuessNextMoveResult result) {
+    private void onTicTacToeAiExecutorTaskComplete(TicTacToeAiExecutorResult executorResult) {
         mainHandler.post(() -> {
-            if (!result.isCanceled()) {
-                Cell cell = result.getCell();
-                setMark(cell.getRow(), cell.getCol(), false);
+            if (!executorResult.isCanceled()) {
+                TicTacToeAiResult aiResult = executorResult.getAiResult();
+                setMark(aiResult.getRow(), aiResult.getCol(), false);
             }
         });
     }

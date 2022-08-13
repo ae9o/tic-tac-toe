@@ -17,10 +17,10 @@
 package ae9o.tictactoe.gui.fragments;
 
 import ae9o.tictactoe.R;
-import ae9o.tictactoe.core.TicTacToeGame;
-import ae9o.tictactoe.core.TicTacToeGame.Combo;
-import ae9o.tictactoe.core.TicTacToeGame.GameResult;
-import ae9o.tictactoe.core.TicTacToeGame.Mark;
+import ae9o.tictactoe.game.TicTacToeGame;
+import ae9o.tictactoe.game.Combo;
+import ae9o.tictactoe.game.GameResult;
+import ae9o.tictactoe.game.Mark;
 import ae9o.tictactoe.databinding.FragmentFieldBinding;
 import ae9o.tictactoe.gui.MainViewModel;
 import ae9o.tictactoe.gui.views.FieldCell;

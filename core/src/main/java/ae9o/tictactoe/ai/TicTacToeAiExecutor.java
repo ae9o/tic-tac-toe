@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package ae9o.tictactoe.core;
+package ae9o.tictactoe.ai;
 
-import ae9o.tictactoe.core.TicTacToeAi.Cell;
+import ae9o.tictactoe.game.TicTacToeGameSnapshot;
+import ae9o.tictactoe.utils.Async;
 
 import javax.annotation.Nullable;
 import java.io.Closeable;
@@ -26,13 +27,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Allows the given AI to run work on a separate thread.
+ * Allows an AI to run on a separate thread.
  */
 public class TicTacToeAiExecutor implements Closeable {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final TicTacToeAi ai;
-    private GuessNextMoveTask task;
-    private OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener;
+    private TicTacToeAiExecutorTask task;
+    private OnTicTacToeAiExecutorTaskCompleteListener onTicTacToeAiExecutorTaskCompleteListener;
 
     /**
      * Creates a TicTacToeAiExecutor initialized with the given AI instance.
@@ -64,18 +65,18 @@ public class TicTacToeAiExecutor implements Closeable {
      * the AI.
      */
     @Nullable
-    public OnAiGuessNextMoveCompleteListener getOnAiGuessNextMoveCompleteListener() {
-        return onAiGuessNextMoveCompleteListener;
+    public OnTicTacToeAiExecutorTaskCompleteListener getOnTicTacToeAiExecutorTaskCompleteListener() {
+        return onTicTacToeAiExecutorTaskCompleteListener;
     }
 
     /**
      * Sets new listener for this executor that will <strong>asynchronously</strong> receive results from the AI.
      *
-     * @param onAiGuessNextMoveCompleteListener The new listener.
+     * @param onTicTacToeAiExecutorTaskCompleteListener The new listener.
      */
-    public void setOnAiGuessNextMoveCompleteListener(
-            @Nullable OnAiGuessNextMoveCompleteListener onAiGuessNextMoveCompleteListener) {
-        this.onAiGuessNextMoveCompleteListener = onAiGuessNextMoveCompleteListener;
+    public void setOnTicTacToeAiExecutorTaskCompleteListener(
+            @Nullable OnTicTacToeAiExecutorTaskCompleteListener onTicTacToeAiExecutorTaskCompleteListener) {
+        this.onTicTacToeAiExecutorTaskCompleteListener = onTicTacToeAiExecutorTaskCompleteListener;
     }
 
     /**
@@ -85,9 +86,9 @@ public class TicTacToeAiExecutor implements Closeable {
      * @param result The result to be passed to the listener.
      */
     @Async
-    private void notifyAiGuessNextMoveComplete(GuessNextMoveResult result) {
-        if (onAiGuessNextMoveCompleteListener != null) {
-            onAiGuessNextMoveCompleteListener.onAiGuessNextMoveComplete(result);
+    private void notifyTicTacToeAiExecutorTaskComplete(TicTacToeAiExecutorResult result) {
+        if (onTicTacToeAiExecutorTaskCompleteListener != null) {
+            onTicTacToeAiExecutorTaskCompleteListener.onTicTacToeAiExecutorTaskComplete(result);
         }
     }
 
@@ -97,11 +98,11 @@ public class TicTacToeAiExecutor implements Closeable {
      * @param snapshot A fixed snapshot of the game in a particular state. This snapshot must not be changed by external
      *                 code during AI work.
      */
-    public void guessNextMoveAsync(TicTacToeGame snapshot) {
+    public void guessNextMoveAsync(TicTacToeGameSnapshot snapshot) {
         if ((task != null) && !task.getFuture().isDone()) {
             throw new IllegalStateException("Only one task must be active at a time.");
         }
-        task = new GuessNextMoveTask(snapshot);
+        task = new TicTacToeAiExecutorTask(snapshot);
         task.setFuture(executorService.submit(task));
     }
 
@@ -117,12 +118,12 @@ public class TicTacToeAiExecutor implements Closeable {
     /**
      * A wrapper for a task that runs on a separate thread.
      */
-    public class GuessNextMoveTask implements Runnable {
-        private final GuessNextMoveResult result = new GuessNextMoveResult();
-        private final TicTacToeGame snapshot;
+    private class TicTacToeAiExecutorTask implements Runnable {
+        private final TicTacToeAiExecutorResult result = new TicTacToeAiExecutorResult();
+        private final TicTacToeGameSnapshot snapshot;
         private Future<?> future;
 
-        public GuessNextMoveTask(TicTacToeGame snapshot) {
+        public TicTacToeAiExecutorTask(TicTacToeGameSnapshot snapshot) {
             this.snapshot = snapshot;
         }
 
@@ -137,8 +138,8 @@ public class TicTacToeAiExecutor implements Closeable {
         @Override
         @Async
         public void run() {
-            result.getCell().set(ai.guessNextMove(snapshot));
-            notifyAiGuessNextMoveComplete(result);
+            result.getAiResult().assign(ai.guessNextMove(snapshot));
+            notifyTicTacToeAiExecutorTaskComplete(result);
         }
 
         public void cancel() {
@@ -148,30 +149,10 @@ public class TicTacToeAiExecutor implements Closeable {
     }
 
     /**
-     * Contains the results of AI work.
-     */
-    public static class GuessNextMoveResult {
-        private final Cell cell = new Cell();
-        private boolean canceled;
-
-        public Cell getCell() {
-            return cell;
-        }
-
-        public void cancel() {
-            canceled = true;
-        }
-
-        public boolean isCanceled() {
-            return canceled;
-        }
-    }
-
-    /**
      * Interface for a listener that will <strong>asynchronously</strong> receive results from an AI.
      */
-    public interface OnAiGuessNextMoveCompleteListener {
+    public interface OnTicTacToeAiExecutorTaskCompleteListener {
         @Async
-        void onAiGuessNextMoveComplete(GuessNextMoveResult result);
+        void onTicTacToeAiExecutorTaskComplete(TicTacToeAiExecutorResult result);
     }
 }

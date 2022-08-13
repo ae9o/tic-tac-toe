@@ -16,7 +16,8 @@
 
 package ae9o.tictactoe.gui.views;
 
-import ae9o.tictactoe.core.TicTacToeGame;
+import ae9o.tictactoe.game.Combo;
+import ae9o.tictactoe.game.Mark;
 import ae9o.tictactoe.gui.utils.Quantity;
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -240,7 +241,7 @@ public class FieldLayout extends TableLayout {
                 cell.setLayoutParams(cellLayoutParams);
                 cell.setFieldLayout(this);
                 cell.setLocation(i, j);
-                cell.setMark(TicTacToeGame.Mark.EMPTY);
+                cell.setMark(Mark.EMPTY);
                 cell.setClickable(true);
                 row.addView(cell);
                 cells[i][j] = cell;
@@ -266,7 +267,7 @@ public class FieldLayout extends TableLayout {
      *
      * @param combo The new combo.
      */
-    public void setCombo(TicTacToeGame.Combo combo) {
+    public void setCombo(Combo combo) {
         final View start = cells[combo.getStartRow()][combo.getStartCol()];
         start.getDrawingRect(tmpRect);
         offsetDescendantRectToMyCoords(start, tmpRect);

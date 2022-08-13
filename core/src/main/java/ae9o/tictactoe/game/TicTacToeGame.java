@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ae9o.tictactoe.core;
+package ae9o.tictactoe.game;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ public class TicTacToeGame {
     private long transpositionHash;
 
     /** A copy of the current state of the game that can be safely passed to another thread. */
-    private TicTacToeGame snapshot;
+    private TicTacToeGameSnapshot snapshot;
 
     /** This event fires when a new game is started. */
     private OnGameStartListener onGameStartListener;
@@ -133,32 +133,42 @@ public class TicTacToeGame {
 
     /**
      * Returns a copy of the current state of the game that can be safely passed to another thread.
+     *
+     * <p>All calls return the same reference. The method should not be called again until the processing of the
+     * previous snapshot is completely completed.
      */
-    public TicTacToeGame getSnapshot() {
+    public TicTacToeGameSnapshot getSnapshot() {
         if (snapshot == null) {
-            snapshot = new TicTacToeGame();
+            snapshot = new TicTacToeGameSnapshot();
+        }
+        snapshot.assign(this);
+        return snapshot;
+    }
+
+    /**
+     * Copies all properties from the specified game instance.
+     *
+     * @param other The instance from which the properties will be copied.
+     */
+    protected void assign(TicTacToeGame other) {
+        setFieldSize(other.fieldSize);
+        for (int i = 0; i < other.fieldSize; ++i) {
+            System.arraycopy(other.field[i], 0, field[i], 0, other.fieldSize);
         }
 
-        snapshot.setFieldSize(fieldSize);
-        for (int i = 0; i < fieldSize; ++i) {
-            System.arraycopy(field[i], 0, snapshot.field[i], 0, fieldSize);
-        }
-
-        snapshot.setupTranspositionTable(false);
-        for (int i = 1 /* skip 0 */; i < transpositionTable.length; ++i) {
-            for (int j = 0; j < fieldSize; ++j) {
-                System.arraycopy(transpositionTable[i][j], 0, snapshot.transpositionTable[i][j], 0, fieldSize);
+        setupTranspositionTable(false);
+        for (int i = 1 /* skip 0 */; i < other.transpositionTable.length; ++i) {
+            for (int j = 0; j < other.fieldSize; ++j) {
+                System.arraycopy(other.transpositionTable[i][j], 0, transpositionTable[i][j], 0, other.fieldSize);
             }
         }
 
-        snapshot.combo.set(combo);
-        snapshot.active = active;
-        snapshot.result = result;
-        snapshot.emptyCellCount = emptyCellCount;
-        snapshot.currentTurnIndex = currentTurnIndex;
-        snapshot.transpositionHash = transpositionHash;
-
-        return snapshot;
+        combo.assign(other.combo);
+        active = other.active;
+        result = other.result;
+        emptyCellCount = other.emptyCellCount;
+        currentTurnIndex = other.currentTurnIndex;
+        transpositionHash = other.transpositionHash;
     }
 
     /**
@@ -240,7 +250,7 @@ public class TicTacToeGame {
     /**
      * Fires a game start event.
      */
-    private void notifyGameStarted() {
+    protected void notifyGameStarted() {
         if (onGameStartListener != null) {
             onGameStartListener.onGameStart(fieldSize);
         }
@@ -312,7 +322,7 @@ public class TicTacToeGame {
     /**
      * Fires a game finished event.
      */
-    private void notifyGameFinished() {
+    protected void notifyGameFinished() {
         if (onGameFinishListener != null) {
             onGameFinishListener.onGameFinish(result, combo);
         }
@@ -362,10 +372,10 @@ public class TicTacToeGame {
             }
         }
         if (left + right + 1 >= comboSize) {
-            combo.startRow = row;
-            combo.stopRow = row;
-            combo.startCol = col - left;
-            combo.stopCol = col + right;
+            combo.setStartRow(row);
+            combo.setStopRow(row);
+            combo.setStartCol(col - left);
+            combo.setStopCol(col + right);
             return true;
         }
         return false;
@@ -397,10 +407,10 @@ public class TicTacToeGame {
             }
         }
         if (bottom + top + 1 >= comboSize) {
-            combo.startCol = col;
-            combo.stopCol = col;
-            combo.startRow = row - top;
-            combo.stopRow = row + bottom;
+            combo.setStartCol(col);
+            combo.setStopCol(col);
+            combo.setStartRow(row - top);
+            combo.setStopRow(row + bottom);
             return true;
         }
         return false;
@@ -432,10 +442,10 @@ public class TicTacToeGame {
             }
         }
         if (bottom + top + 1 >= comboSize) {
-            combo.startRow = row - top;
-            combo.startCol = col - top;
-            combo.stopRow = row + bottom;
-            combo.stopCol = col + bottom;
+            combo.setStartRow(row - top);
+            combo.setStartCol(col - top);
+            combo.setStopRow(row + bottom);
+            combo.setStopCol(col + bottom);
             return true;
         }
         return false;
@@ -467,10 +477,10 @@ public class TicTacToeGame {
             }
         }
         if (bottom + top + 1 >= comboSize) {
-            combo.startRow = row - top;
-            combo.startCol = col + top;
-            combo.stopRow = row + bottom;
-            combo.stopCol = col - bottom;
+            combo.setStartRow(row - top);
+            combo.setStartCol(col + top);
+            combo.setStopRow(row + bottom);
+            combo.setStopCol(col - bottom);
             return true;
         }
         return false;
@@ -527,7 +537,7 @@ public class TicTacToeGame {
      * @param col The target col.
      * @param mark The target mark.
      */
-    void setMarkInternal(int row, int col, Mark mark) {
+    protected void setMarkInternal(int row, int col, Mark mark) {
         transpositionHash ^= transpositionTable[field[row][col].ordinal()][row][col];
         field[row][col] = mark;
         emptyCellCount += (mark == Mark.EMPTY) ? 1 : -1;
@@ -554,7 +564,7 @@ public class TicTacToeGame {
      * @param row The target row.
      * @param col The target col.
      */
-    private void notifyMarkSet(int row, int col) {
+    protected void notifyMarkSet(int row, int col) {
         if (onMarkSetListener != null) {
             onMarkSetListener.onMarkSet(field[row][col], row, col);
         }
@@ -627,7 +637,7 @@ public class TicTacToeGame {
      *
      * <p>This method is required for AI to work.
      */
-    void switchTurn() {
+    protected void switchTurn() {
         currentTurnIndex ^= 1;
     }
 
@@ -639,69 +649,6 @@ public class TicTacToeGame {
      */
     public boolean isFinalTurn() {
         return (emptyCellCount == 0);
-    }
-
-    /**
-     * Stores the coordinates of the winning combo.
-     */
-    public static class Combo {
-        private int startRow;
-        private int startCol;
-        private int stopRow;
-        private int stopCol;
-
-        public int getStartRow() {
-            return startRow;
-        }
-
-        public int getStartCol() {
-            return startCol;
-        }
-
-        public int getStopRow() {
-            return stopRow;
-        }
-
-        public int getStopCol() {
-            return stopCol;
-        }
-
-        private void set(Combo other) {
-            startRow = other.startRow;
-            startCol = other.startCol;
-            stopRow = other.stopRow;
-            stopCol = other.stopCol;
-        }
-    }
-
-    /** IDs for marks placed by players in the cells of the field. */
-    public enum Mark {
-        EMPTY,
-        X,
-        O;
-
-        public static Mark valueOf(int ordinal) {
-            final Mark[] values = values();
-            if ((ordinal < 0) || (ordinal >= values.length)) {
-                throw new IllegalArgumentException("There is no mark with such ordinal: " + ordinal);
-            }
-            return values[ordinal];
-        }
-    }
-
-    /** Possible outcomes at the end of the game. */
-    public enum GameResult {
-        /** The result has not yet been defined. */
-        UNDEFINED,
-
-        /** The game was prematurely cancelled. */
-        CANCELED,
-
-        /** The game finished in a draw. */
-        DRAW,
-
-        /** One of the players has collected a winning combination. */
-        COMBO
     }
 
     /** This event fires when a new game is started. */

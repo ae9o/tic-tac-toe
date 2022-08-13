@@ -14,10 +14,29 @@
  * limitations under the License.
  */
 
-package ae9o.tictactoe.core;
+package ae9o.tictactoe.game;
 
 /**
- * A helper annotation for explicitly marking methods that run on other threads.
+ * Possible outcomes at the end of the game.
  */
-public @interface Async {
+public enum GameResult {
+    /**
+     * The result has not yet been defined.
+     */
+    UNDEFINED,
+
+    /**
+     * The game was prematurely cancelled.
+     */
+    CANCELED,
+
+    /**
+     * The game finished in a draw.
+     */
+    DRAW,
+
+    /**
+     * One of the players has collected a winning combination.
+     */
+    COMBO
 }

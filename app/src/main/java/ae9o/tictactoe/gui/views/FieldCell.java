@@ -17,7 +17,7 @@
 package ae9o.tictactoe.gui.views;
 
 import ae9o.tictactoe.R;
-import ae9o.tictactoe.core.TicTacToeGame.Mark;
+import ae9o.tictactoe.game.Mark;
 import ae9o.tictactoe.gui.utils.Quantity;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;

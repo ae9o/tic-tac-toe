@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package ae9o.tictactoe.core;
+package ae9o.tictactoe.ai;
 
+import ae9o.tictactoe.game.TicTacToeGameSnapshot;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
@@ -23,7 +24,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.List;
 
-import ae9o.tictactoe.core.TicTacToeGame.Mark;
+import ae9o.tictactoe.game.Mark;
 
 /**
  * Implements the opponent's AI.
@@ -69,7 +70,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
     private static final int MIN_REWARDED_SEQUENCE = 3;
 
     /** The core of the game. */
-    private TicTacToeGame game;
+    private TicTacToeGameSnapshot snapshot;
 
     /** The pool with nodes of the cache. */
     private final Long2ObjectMap<Node> nodes = new Long2ObjectOpenHashMap<>();
@@ -77,7 +78,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
     private SoftReference<NodePool> nodePoolRef = new SoftReference<>(new NodePool());
 
     /** The result of the algorithm. */
-    private final Cell guess = new Cell();
+    private final TicTacToeAiResult result = new TicTacToeAiResult();
 
     /** Maximum search depth at the current iteration.
      * When the specified depth is reached, the algorithm uses heuristics and does not go deeper. */
@@ -112,9 +113,9 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
      *
      * @return The coordinates of the cell in which the player should place a mark.
      */
-    public Cell guessNextMove(TicTacToeGame game) {
-        this.game = game;
-        comboSize = game.getComboSize();
+    public TicTacToeAiResult guessNextMove(TicTacToeGameSnapshot snapshot) {
+        this.snapshot = snapshot;
+        comboSize = snapshot.getComboSize();
 
         setupPool();
         final long startTime = System.currentTimeMillis();
@@ -127,7 +128,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         } while (maxDepthTouched && !Thread.interrupted() && (System.currentTimeMillis() - startTime < MAX_SEARCH_TIME));
         disposePool();
 
-        return guess;
+        return result;
     }
 
     /**
@@ -186,25 +187,25 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
      */
     private int rootMinimax(final int alpha, final int beta) {
         // Store to compute heuristics later.
-        maxPlayerMark = game.getCurrentTurn();
-        game.switchTurn();
-        minPlayerMark = game.getCurrentTurn();
+        maxPlayerMark = snapshot.getCurrentTurn();
+        snapshot.switchTurn();
+        minPlayerMark = snapshot.getCurrentTurn();
 
         int g = Integer.MIN_VALUE;
         int a = alpha;
         maximize:
-        for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
+        for (int row = 0, size = snapshot.getFieldSize(); row < size; ++row) {
             for (int col = 0; col < size; ++col) {
-                if (game.getMark(row, col) == Mark.EMPTY) {
-                    game.setMarkInternal(row, col, maxPlayerMark);
+                if (snapshot.getMark(row, col) == Mark.EMPTY) {
+                    snapshot.setMarkInternal(row, col, maxPlayerMark);
                     final int tmp = nestedMinimax(true, row, col, 0, a, beta);
-                    game.setMarkInternal(row, col, Mark.EMPTY);
+                    snapshot.setMarkInternal(row, col, Mark.EMPTY);
 
                     // Save the move with the maximum score, in order to
                     // return it as the result of the work of the AI.
                     if (tmp > g) {
                         g = tmp;
-                        guess.set(row, col);
+                        result.set(row, col);
                     }
 
                     a = Math.max(a, g);
@@ -215,7 +216,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
             }
         }
 
-        game.switchTurn();
+        snapshot.switchTurn();
         return g;
     }
 
@@ -234,7 +235,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
     private int nestedMinimax(final boolean minimize, final int prevRow, final int prevCol, final int depth, int alpha,
                               int beta) {
         // Get cached results for the current game state.
-        Node node = nodes.get(game.getTranspositionHash());
+        Node node = nodes.get(snapshot.getTranspositionHash());
         if (node != null) {
             if (node.lowerBound >= beta) {
                 return node.lowerBound;
@@ -247,14 +248,14 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         }
 
         // Check terminal states.
-        if (game.findCombo(prevRow, prevCol)) {
+        if (snapshot.findCombo(prevRow, prevCol)) {
             if (minimize) {
                 return Integer.MAX_VALUE - depth;
             } else {
                 return Integer.MIN_VALUE + depth;
             }
         }
-        if (game.isFinalTurn()) {
+        if (snapshot.isFinalTurn()) {
             return 0;
         }
 
@@ -266,7 +267,7 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         }
 
         // If the depth is insufficient, use the Minimax.
-        game.switchTurn();
+        snapshot.switchTurn();
 
         final int d = depth + 1;
         int g;
@@ -274,13 +275,13 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
             g = Integer.MAX_VALUE;
             int b = beta;
             minimize:
-            for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
+            for (int row = 0, size = snapshot.getFieldSize(); row < size; ++row) {
                 for (int col = 0; col < size; ++col) {
-                    if (game.getMark(row, col) == Mark.EMPTY) {
-                        game.setMarkInternal(row, col, minPlayerMark);
+                    if (snapshot.getMark(row, col) == Mark.EMPTY) {
+                        snapshot.setMarkInternal(row, col, minPlayerMark);
                         g = Math.min(g, nestedMinimax(false, row, col, d, alpha, b));
                         b = Math.min(b, g);
-                        game.setMarkInternal(row, col, Mark.EMPTY);
+                        snapshot.setMarkInternal(row, col, Mark.EMPTY);
                         if (g <= alpha) {
                             break minimize;
                         }
@@ -291,13 +292,13 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
             g = Integer.MIN_VALUE;
             int a = alpha;
             maximize:
-            for (int row = 0, size = game.getFieldSize(); row < size; ++row) {
+            for (int row = 0, size = snapshot.getFieldSize(); row < size; ++row) {
                 for (int col = 0; col < size; ++col) {
-                    if (game.getMark(row, col) == Mark.EMPTY) {
-                        game.setMarkInternal(row, col, maxPlayerMark);
+                    if (snapshot.getMark(row, col) == Mark.EMPTY) {
+                        snapshot.setMarkInternal(row, col, maxPlayerMark);
                         g = Math.max(g, nestedMinimax(true, row, col, d, a, beta));
                         a = Math.max(a, g);
-                        game.setMarkInternal(row, col, Mark.EMPTY);
+                        snapshot.setMarkInternal(row, col, Mark.EMPTY);
                         if (g >= beta) {
                             break maximize;
                         }
@@ -306,12 +307,12 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
             }
         }
 
-        game.switchTurn();
+        snapshot.switchTurn();
 
         // Cache new results for the current game state.
         if (node == null) {
             node = nodePool.obtain();
-            nodes.put(game.getTranspositionHash(), node);
+            nodes.put(snapshot.getTranspositionHash(), node);
         }
         if (g <= alpha) {
             node.upperBound = g;
@@ -348,19 +349,19 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         pa2.reset();
 
         // Scan the part of the field located above the given diagonals.
-        for (int i = 0, size = game.getFieldSize(); i < size; ++i) {
+        for (int i = 0, size = snapshot.getFieldSize(); i < size; ++i) {
             for (int j = 0, n = size - 1, m = n - i; j <= i; ++j) {
                 // Scan lines above back-slash diagonal (\).
                 // (0,9)
                 // (0,8) -> (1,9)
                 // (0,7) -> (1,8) -> (2,9)
-                pa1.addMark(game.getMark(j, m + j));
+                pa1.addMark(snapshot.getMark(j, m + j));
 
                 // Scan lines above slash diagonal (/).
                 // (0,0)
                 // (0,1) -> (1,0)
                 // (0,2) -> (1,1) -> (2,0)
-                pa2.addMark(game.getMark(j, i - j));
+                pa2.addMark(snapshot.getMark(j, i - j));
 
             }
             pa1.startNextLine();
@@ -368,29 +369,29 @@ public class MtdfTicTacToeAi implements TicTacToeAi {
         }
 
         // Scan the part of the field located below the given diagonal.
-        for (int i = 0, n = game.getFieldSize() - 1; i < n; ++i) {
+        for (int i = 0, n = snapshot.getFieldSize() - 1; i < n; ++i) {
             for (int j = 0, m = n - i; j <= i; ++j) {
                 // Scan lines below back-slash diagonal (\).
                 // (9,0)
                 // (8,0) -> (9,1)
                 // (7,0) -> (8,1) -> (9,2)
-                pa1.addMark(game.getMark(m + j, j));
+                pa1.addMark(snapshot.getMark(m + j, j));
 
                 // Scan lines below slash diagonal (/).
                 // (9,9)
                 // (8,9) -> (9,8)
                 // (7,9) -> (8,8) -> (9,7)
-                pa2.addMark(game.getMark(n - (i - j), n - j));
+                pa2.addMark(snapshot.getMark(n - (i - j), n - j));
             }
             pa1.startNextLine();
             pa2.startNextLine();
         }
 
         // Scan rows and columns.
-        for (int i = 0, size = game.getFieldSize(); i < size; ++i) {
+        for (int i = 0, size = snapshot.getFieldSize(); i < size; ++i) {
             for (int j = 0; j < size; ++j) {
-                pa1.addMark(game.getMark(i, j));
-                pa2.addMark(game.getMark(j, i));
+                pa1.addMark(snapshot.getMark(i, j));
+                pa2.addMark(snapshot.getMark(j, i));
             }
             pa1.startNextLine();
             pa2.startNextLine();
