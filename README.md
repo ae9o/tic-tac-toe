@@ -9,13 +9,13 @@
 # Advanced tic-tac-toe for custom fields
 
 This implementation of tic-tac-toe allows to play against advanced AI on a field of custom size. The development of this
-app was started as part of a test task. I continue to develop it and its code is distributed under the Apache License
-2.0. Feel free to use it for any purpose.
+app was started as part of a test task, and its code is distributed under the Apache License 2.0. Feel free to use it 
+for any purpose.
 
 In order to maintain playability on very large fields, a small change in gameplay was required. A player must collect
 a combo of only 5 marks in a row on a field of size 6 or more (see the gif above for an example). It seems to me that
 this is the only version of the game that is exciting. The limited size of the combo on a large field creates a wide
-scope of possible strategies and makes the game tense. Awesome!
+scope of possible strategies and makes the game tense.
 
 ## Implementation details
 
@@ -67,11 +67,6 @@ other platform.
 The core is optimized to avoid autoboxing and re-creation of various objects as much as possible. Fast HashMaps with
 primitive keys are used from the `fastutil` package. Freezes during garbage collection and smooth gameplay are
 incompatible things. Everything is written in such an approach that the garbage collector can go on vacation.
-
-## Future modifications
-
-Colorful animations, additional settings and the ability to play on the same local network will appear in the game over
-time. But the timing is not known, as I am working on the project in my spare time.
 
 ## References
 
